@@ -1,6 +1,4 @@
 import { ImageResponse } from 'next/og'
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 
 // Image metadata
 export const alt = 'Sign In - cursor.link'
@@ -12,13 +10,16 @@ export const contentType = 'image/png'
 
 // Image generation
 export default async function Image() {
-  // Load Geist fonts
-  const geistSemiBold = await readFile(
-    join(process.cwd(), 'public/fonts/Geist-SemiBold.ttf')
-  )
-  const geistMedium = await readFile(
-    join(process.cwd(), 'public/fonts/Geist-Medium.ttf')
-  )
+  // Load Geist fonts using fetch (works better in serverless environments)
+  const geistSemiBold = fetch(
+    new URL('/fonts/Geist-SemiBold.ttf', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ).then((res) => res.arrayBuffer())
+  
+  const geistMedium = fetch(
+    new URL('/fonts/Geist-Medium.ttf', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ).then((res) => res.arrayBuffer())
+
+  const [geistSemiBoldData, geistMediumData] = await Promise.all([geistSemiBold, geistMedium])
 
   return new ImageResponse(
     (
@@ -159,13 +160,13 @@ export default async function Image() {
       fonts: [
         {
           name: 'Geist',
-          data: geistSemiBold,
+          data: geistSemiBoldData,
           style: 'normal',
           weight: 600,
         },
         {
           name: 'Geist',
-          data: geistMedium,
+          data: geistMediumData,
           style: 'normal',
           weight: 500,
         },

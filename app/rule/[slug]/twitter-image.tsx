@@ -2,8 +2,6 @@ import { ImageResponse } from 'next/og'
 import { db } from "@/lib/db"
 import { cursorRule, user } from "@/lib/schema"
 import { eq, and, like } from "drizzle-orm"
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 
 // Image metadata
 export const alt = 'Cursor Rule'
@@ -44,13 +42,16 @@ function createSlug(title: string, ruleId: string): string {
 
 // Image generation
 export default async function Image({ params }: { params: { slug: string } }) {
-  // Load Geist fonts
-  const geistSemiBold = await readFile(
-    join(process.cwd(), 'public/fonts/Geist-SemiBold.ttf')
-  )
-  const geistMedium = await readFile(
-    join(process.cwd(), 'public/fonts/Geist-Medium.ttf')
-  )
+  // Load Geist fonts using fetch (works better in serverless environments)
+  const geistSemiBold = fetch(
+    new URL('/fonts/Geist-SemiBold.ttf', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ).then((res) => res.arrayBuffer())
+  
+  const geistMedium = fetch(
+    new URL('/fonts/Geist-Medium.ttf', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ).then((res) => res.arrayBuffer())
+
+  const [geistSemiBoldData, geistMediumData] = await Promise.all([geistSemiBold, geistMedium])
   
   try {
 
@@ -236,13 +237,13 @@ export default async function Image({ params }: { params: { slug: string } }) {
         fonts: [
           {
             name: 'Geist',
-            data: geistSemiBold,
+            data: geistSemiBoldData,
             style: 'normal',
             weight: 600,
           },
           {
             name: 'Geist',
-            data: geistMedium,
+            data: geistMediumData,
             style: 'normal',
             weight: 500,
           },
@@ -276,7 +277,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
         fonts: [
           {
             name: 'Geist',
-            data: geistSemiBold,
+            data: geistSemiBoldData,
             style: 'normal',
             weight: 600,
           },
