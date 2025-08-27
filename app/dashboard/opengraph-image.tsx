@@ -1,4 +1,6 @@
 import { ImageResponse } from 'next/og'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 // Image metadata
 export const alt = 'Dashboard - cursor.link'
@@ -8,18 +10,38 @@ export const size = {
 }
 export const contentType = 'image/png'
 
+async function loadGeistFonts() {
+  // During build time, use filesystem access
+  // During runtime on Vercel, use fetch for better performance  
+  if (process.env.VERCEL_ENV || process.env.NODE_ENV === 'production') {
+    try {
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://cursor.link'
+      
+      const [geistSemiBoldRes, geistMediumRes] = await Promise.all([
+        fetch(new URL('/fonts/Geist-SemiBold.ttf', baseUrl)),
+        fetch(new URL('/fonts/Geist-Medium.ttf', baseUrl))
+      ])
+      
+      return Promise.all([
+        geistSemiBoldRes.arrayBuffer(),
+        geistMediumRes.arrayBuffer()
+      ])
+    } catch (error) {
+      // Fallback to filesystem if fetch fails
+      console.warn('Font fetch failed, falling back to filesystem:', error)
+    }
+  }
+  
+  // Use filesystem approach for local development and build time
+  return Promise.all([
+    readFile(join(process.cwd(), 'public/fonts/Geist-SemiBold.ttf')),
+    readFile(join(process.cwd(), 'public/fonts/Geist-Medium.ttf'))
+  ])
+}
+
 // Image generation
 export default async function Image() {
-  // Load Geist fonts using fetch (works better in serverless environments)
-  const geistSemiBold = fetch(
-    new URL('/fonts/Geist-SemiBold.ttf', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  ).then((res) => res.arrayBuffer())
-  
-  const geistMedium = fetch(
-    new URL('/fonts/Geist-Medium.ttf', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  ).then((res) => res.arrayBuffer())
-
-  const [geistSemiBoldData, geistMediumData] = await Promise.all([geistSemiBold, geistMedium])
+  const [geistSemiBoldData, geistMediumData] = await loadGeistFonts()
 
   return new ImageResponse(
     (
