@@ -35,27 +35,19 @@ export async function GET(
       return NextResponse.json({ error: "Registry item not found" }, { status: 404 })
     }
 
-    // Generate registry item dynamically
+    // Generate universal registry item with content
     const registryItem = {
       "$schema": "https://ui.shadcn.com/schema/registry-item.json",
-      "name": rule.id,
-      "type": "registry:file",
-      "title": rule.title,
-      "description": `Cursor rule: ${rule.title}${rule.user?.name ? ` by ${rule.user.name}` : ''}`,
-      "author": rule.user?.name || "cursor.link",
+      "name": rule.title,
+      "type": "registry:item", // Changed to registry:item for universal items
       "files": [
         {
-          "path": `rules/${rule.id}.mdc`,
-          "type": "registry:file", 
-          "target": `~/.cursor/rules/${rule.id}.mdc`
+          "path": `cursor.link/rules/${rule.title}.mdc`, // Source path (not used but required)
+          "type": "registry:file",
+          "target": `~/.cursor/rules/${rule.title}.mdc`, // Explicit target makes it universal
+          "content": rule.content // Include the actual content
         }
-      ],
-      "categories": ["cursor-rules"],
-      "docs": `This rule will be installed to .cursor/rules/${rule.id}.mdc and will apply based on the rule configuration.`,
-      "meta": {
-        "ruleType": rule.ruleType,
-        "source": "cursor.link"
-      }
+      ]
     }
     
     return NextResponse.json(registryItem, {

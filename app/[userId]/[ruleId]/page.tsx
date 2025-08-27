@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Copy, Eye, Download, Terminal, Share2 } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 
 interface CursorRule {
   id: string
@@ -213,16 +214,18 @@ export default function PublicRulePage() {
                 <code className="flex-1 text-sm text-gray-300 font-mono">
                   npx shadcn add {window.location.origin}/api/registry/{rule.id}
                 </code>
-                <button
+                <Button
                   onClick={handleInstallCopy}
-                  className="flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-[#70A7D7] text-[#2A2A2A] hover:bg-[#90BAE0] transition-colors"
+                  variant="primary"
+                  size="sm"
+                  className="text-xs px-2 py-1 h-auto"
                 >
                   <Copy className="h-3 w-3" />
                   Copy
-                </button>
+                </Button>
               </div>
               <div className="text-xs text-gray-400">
-                This will install the cursor rule to <code className="text-gray-300">~/.cursor/rules/{rule.id}.mdc</code>
+                This will install the cursor rule to <code className="text-gray-300">~/.cursor/rules/{rule.title}.mdc</code>
               </div>
             </div>
           </Card>
@@ -230,29 +233,32 @@ export default function PublicRulePage() {
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-[0]">
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 onClick={handleInstallCopy}
-                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none"
+                variant="primary"
+                size="sm"
               >
                 <Copy className="h-3 w-3" />
                 Copy CLI
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={handleCopyViewURL}
-                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none"
+                variant="primary"
+                size="sm"
               >
                 <Share2 className="h-3 w-3" />
                 Copy View URL
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={handleCopy}
-                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-gray-600 px-2 py-1 text-[12px] font-semibold text-white outline-none transition-colors duration-200 hover:bg-gray-500 focus:outline-none"
+                variant="secondary"
+                size="sm"
               >
                 <Copy className="h-3 w-3" />
                 {copied ? "Copied!" : "Copy Text"}
-              </button>
+              </Button>
               
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Eye className="h-3 w-3" />

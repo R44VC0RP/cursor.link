@@ -164,8 +164,29 @@
   color: var(--success-text) !important;
 }
 
-[data-sonner-toast] [data-icon] {
-  color: #70A7D7 !important;
+/* Sonner Toast Styling */
+[data-sonner-toast] {
+  background: #1B1D21 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  box-shadow: rgba(0, 0, 0, 0.06) 0px 18px 25.8px 0px !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-color: rgba(112, 167, 215, 0.3) !important;
 }
 
 [data-sonner-toast] [data-content] {
@@ -175,8 +196,49 @@
 [data-sonner-toast] [data-title] {
   font-weight: 600 !important;
   margin-bottom: 2px !important;
+  color: white !important;
 }
 
 [data-sonner-toast] [data-description] {
   opacity: 0.9 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-sonner-toast] [data-icon] {
+  color: #70A7D7 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: #22c55e !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444 !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #f59e0b !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: #70A7D7 !important;
+}
+
+/* Close button styling */
+[data-sonner-toast] [data-close-button] {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 4px !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
 }

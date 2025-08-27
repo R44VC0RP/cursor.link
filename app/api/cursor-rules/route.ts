@@ -144,3 +144,36 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({
+      headers: request.headers
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { id } = await request.json()
+
+    if (!id) {
+      return NextResponse.json({ error: "Rule ID is required" }, { status: 400 })
+    }
+
+    // Delete the rule (only if it belongs to the authenticated user)
+    const deletedRule = await db
+      .delete(cursorRule)
+      .where(and(eq(cursorRule.id, id), eq(cursorRule.userId, session.user.id)))
+      .returning()
+
+    if (deletedRule.length === 0) {
+      return NextResponse.json({ error: "Rule not found or unauthorized" }, { status: 404 })
+    }
+
+    return NextResponse.json({ message: "Rule deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting cursor rule:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

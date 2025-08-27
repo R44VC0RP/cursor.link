@@ -103,7 +103,8 @@ export function MagicLinkForm() {
         <Button
           type="submit"
           disabled={isLoading || !email.trim()}
-          className="w-full bg-[#70A7D7] hover:bg-[#90BAE0] text-[#2A2A2A] font-semibold"
+          variant="primary"
+          className="w-full"
         >
           {isLoading ? "Sending magic link..." : "Send magic link"}
         </Button>
