@@ -22,14 +22,26 @@ function generateAvatarColors(email: string) {
   }
 }
 
+// Skeleton loader component
+function UserAvatarSkeleton() {
+  return (
+    <div className="w-[35px] h-[35px] bg-gray-700/50 animate-pulse rounded-lg" />
+  )
+}
+
 export function UserAvatar() {
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
   const router = useRouter()
   const [showMenu, setShowMenu] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [rulesCount, setRulesCount] = useState(0)
   const [totalViews, setTotalViews] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Show skeleton while loading
+  if (isPending) {
+    return <UserAvatarSkeleton />
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
