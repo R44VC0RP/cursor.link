@@ -12,12 +12,10 @@ import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { MagicLinkForm } from "@/components/auth/magic-link-form"
 import { track } from "@vercel/analytics"
 
 function HomePage() {
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
 
   // URL state - only for persistence
   const [urlTitle, setUrlTitle] = useQueryState("title", {
@@ -226,7 +224,7 @@ function HomePage() {
         titleLength: localTitle.length,
         contentLength: localContent.length,
       })
-      
+
       // If this was a new rule (no existing savedRuleId), update URL to put user in edit mode
       if (!savedRuleId) {
         setUrlEditId(rule.id)
@@ -250,10 +248,10 @@ function HomePage() {
       .replace(/[^a-z0-9-]/g, '') // Remove any characters that aren't letters, numbers, or hyphens
       .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
       .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-    
+
     // Get last 3 characters of rule ID
     const last3 = ruleId.slice(-3)
-    
+
     return `${urlTitle}-${last3}`
   }
 
@@ -363,7 +361,7 @@ function HomePage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${localTitle || "cursor-rules"}.txt`
+    a.download = `${localTitle || "cursor-rules"}.mdc`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -473,17 +471,21 @@ UI and Styling
             {/* Action Buttons */}
             <div className="flex items-center justify-between pt-[0]">
               <div className="flex items-center gap-3">
-                {session ? (
+                <Button
+                  onClick={handleDownload}
+                  disabled={!localContent.trim()}
+                  variant="primary"
+                  size="sm"
+                >
+                  <Download className="h-3 w-3" />
+                  Download
+                </Button>
+                {isPending ? (
+                  // Loading state - show skeleton button
+                  <div className="h-8 w-48 bg-gray-700/50 animate-pulse rounded-lg hidden" />
+                ) : session ? (
                   <>
-                    <Button
-                      onClick={handleDownload}
-                      disabled={!localContent.trim()}
-                      variant="primary"
-                      size="sm"
-                    >
-                      <Download className="h-3 w-3" />
-                      Download
-                    </Button>
+
                     {!savedRuleId ? (
                       <Button
                         onClick={handleSave}
@@ -570,18 +572,9 @@ UI and Styling
                 ) : (
                   <>
                     <Button
-                      onClick={handleDownload}
-                      disabled={!localContent.trim()}
-                      variant="secondary"
-                      size="sm"
-                    >
-                      <Download className="h-3 w-3" />
-                      Download
-                    </Button>
-                    <Button
                       onClick={() => window.location.href = '/login'}
                       variant="primary"
-                      size="sm" 
+                      size="sm"
                     >
                       <User className="h-3 w-3" />
                       Sign in (it's free) to save your notes
@@ -604,8 +597,8 @@ UI and Styling
                 )}
                 {savedRuleId && (
                   <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${isPublic
-                      ? "bg-green-500/10 text-green-400"
-                      : "bg-gray-500/10 text-gray-400"
+                    ? "bg-green-500/10 text-green-400"
+                    : "bg-gray-500/10 text-gray-400"
                     }`}>
                     {isPublic ? "Public" : "Private"}
                   </span>

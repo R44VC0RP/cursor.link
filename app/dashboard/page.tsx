@@ -432,6 +432,18 @@ export default function DashboardPage() {
                             <h3 className="font-medium text-white text-sm truncate">
                               {rule.title}
                             </h3>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const slug = createSlug(rule.title, rule.id)
+                                const publicUrl = `${window.location.origin}/rule/${slug}`
+                                window.open(publicUrl, '_blank')
+                              }}
+                              className="flex items-center justify-center p-1 rounded-md hover:bg-white/10 transition-colors"
+                              title="Open in new tab"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><title>window-link</title><g fill="#70A7D7"><path d="M14.25 2H3.75C2.233 2 1 3.23 1 4.75V7H17V4.75C17 3.23 15.767 2 14.25 2ZM3.5 5.5C2.948 5.5 2.5 5.05 2.5 4.5C2.5 3.95 2.948 3.5 3.5 3.5C4.052 3.5 4.5 3.95 4.5 4.5C4.5 5.05 4.052 5.5 3.5 5.5ZM6.5 5.5C5.948 5.5 5.5 5.05 5.5 4.5C5.5 3.95 5.948 3.5 6.5 3.5C7.052 3.5 7.5 3.95 7.5 4.5C7.5 5.05 7.052 5.5 6.5 5.5Z"></path> <path d="M12 17.5H11.5C10.1216 17.5 9 16.3789 9 15V14C9 12.6211 10.1216 11.5 11.5 11.5H12C12.4141 11.5 12.75 11.8359 12.75 12.25C12.75 12.6641 12.4141 13 12 13H11.5C10.9487 13 10.5 13.4482 10.5 14V15C10.5 15.5518 10.9487 16 11.5 16H12C12.4141 16 12.75 16.3359 12.75 16.75C12.75 17.1641 12.4141 17.5 12 17.5Z"></path> <path d="M15.5 17.5H15C14.5859 17.5 14.25 17.1641 14.25 16.75C14.25 16.3359 14.5859 16 15 16H15.5C16.0513 16 16.5 15.5518 16.5 15V14C16.5 13.4482 16.0513 13 15.5 13H15C14.5859 13 14.25 12.6641 14.25 12.25C14.25 11.8359 14.5859 11.5 15 11.5H15.5C16.8784 11.5 18 12.6211 18 14V15C18 16.3789 16.8784 17.5 15.5 17.5Z"></path> <path opacity="0.4" d="M7.5 15V14C7.5 11.7939 9.2944 10 11.5 10H12C12.5783 10 13.101 10.2256 13.5 10.5854C13.899 10.2255 14.4217 10 15 10H15.5C16.031 10 16.5359 10.1089 17 10.2974V7H1V13.25C1 14.77 2.231 16 3.75 16H7.642C7.5584 15.6787 7.5 15.3472 7.5 15Z"></path> <path d="M14.75 15.25H12.25C11.8359 15.25 11.5 14.9141 11.5 14.5C11.5 14.0859 11.8359 13.75 12.25 13.75H14.75C15.1641 13.75 15.5 14.0859 15.5 14.5C15.5 14.9141 15.1641 15.25 14.75 15.25Z"></path></g></svg>
+                            </button>
                             {rule.isPublic && (
                               <span className="px-2 py-0.5 bg-green-500/10 text-green-400 text-xs rounded-full flex-shrink-0">
                                 Public
