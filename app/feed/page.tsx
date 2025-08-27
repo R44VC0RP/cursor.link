@@ -276,16 +276,16 @@ export default function FeedPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <Link href={`/rule/${createRuleSlug(rule.title, rule.id)}`}>
-                              <h3 className="font-medium text-white text-sm hover:text-[#70A7D7] transition-colors cursor-pointer truncate">
+                              <h3 className="font-medium text-white text-sm hover:text-[#70A7D7] transition-colors cursor-pointer line-clamp-2">
                                 {rule.title}
                               </h3>
                             </Link>
                           </div>
-                          <p className="text-xs text-gray-400 mb-1 truncate">
+                          <p className="text-xs text-gray-400 mb-1 line-clamp-2">
                             {firstLine(rule.content)}
                           </p>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>by {rule.user.name}</span>
+                            <span>by {rule.user?.name || 'Anonymous'}</span>
                             <span>{formatRelativeTime(rule.createdAt)}</span>
                             <div className="flex items-center gap-1">
                               <Eye className="h-3 w-3" />
