@@ -6,6 +6,7 @@ interface EnvVars {
   GITHUB_CLIENT_ID: string
   GITHUB_CLIENT_SECRET: string
   DATABASE_URL: string
+  BETTER_AUTH_SECRET: string
   NEXT_PUBLIC_APP_URL?: string
 }
 
@@ -17,7 +18,8 @@ export function validateEnv(): EnvVars {
     'INBOUND_API_KEY',
     'GITHUB_CLIENT_ID', 
     'GITHUB_CLIENT_SECRET',
-    'DATABASE_URL'
+    'DATABASE_URL',
+    'BETTER_AUTH_SECRET'
   ] as const
   
   for (const key of requiredVars) {
@@ -38,6 +40,7 @@ export function validateEnv(): EnvVars {
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID!,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET!,
     DATABASE_URL: process.env.DATABASE_URL!,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET!,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   }
 }
