@@ -6,7 +6,7 @@ import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Copy, Eye, Download, Terminal, Share2 } from "lucide-react"
+import { Copy, Eye, Download, Terminal, Check } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -77,48 +77,43 @@ export default function PublicRulePage() {
   const [error, setError] = useState("")
   const [tokenCount, setTokenCount] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [cliCopied, setCliCopied] = useState(false)
 
   useEffect(() => {
     const fetchRule = async () => {
       try {
-        // Extract params values safely
-        const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId
-        const ruleId = Array.isArray(params.ruleId) ? params.ruleId[0] : params.ruleId
+        // Extract slug from params
+        const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug
         
-        const response = await fetch(`/api/public-rule/${userId}/${ruleId}`)
+        const response = await fetch(`/api/rule/${slug}`)
         
         if (!response.ok) {
           throw new Error('Rule not found')
         }
 
         const ruleData = await response.json()
+        setRule(ruleData)
         
-        // Redirect to new URL format
-        const createSlug = (title: string, ruleId: string): string => {
-          const urlTitle = title
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^a-z0-9-]/g, '')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '')
-          
-          const last3 = ruleId.slice(-3)
-          return `${urlTitle}-${last3}`
+        // Count tokens
+        if (ruleData.content.trim()) {
+          try {
+            const tokens = countTokens(ruleData.content)
+            setTokenCount(tokens)
+          } catch (error) {
+            console.error("Error counting tokens:", error)
+          }
         }
-        
-        const slug = createSlug(ruleData.title, ruleData.id)
-        window.location.replace(`/rule/${slug}`)
-        
       } catch (err) {
         setError('Rule not found or not public')
+      } finally {
         setLoading(false)
       }
     }
 
-    if (params.userId && params.ruleId) {
+    if (params.slug) {
       fetchRule()
     }
-  }, [params.userId, params.ruleId])
+  }, [params.slug])
 
   const handleCopy = async () => {
     if (!rule) return
@@ -128,20 +123,30 @@ export default function PublicRulePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleCopyViewURL = async () => {
-    const currentUrl = window.location.href
-    await navigator.clipboard.writeText(currentUrl)
-    toast.success("View URL copied to clipboard!")
-  }
-
   const handleInstallCopy = async () => {
     if (!rule) return
     
     const installCommand = `npx shadcn add ${window.location.origin}/api/registry/${rule.id}`
     await navigator.clipboard.writeText(installCommand)
-    toast.success("Install command copied to clipboard!", {
-      description: "You can now paste it in your terminal to install the rule."
-    })
+    setCliCopied(true)
+    setTimeout(() => setCliCopied(false), 2000)
+    toast.success("Install command copied to clipboard!")
+  }
+
+
+
+  const handleDownload = () => {
+    if (!rule) return
+    
+    const blob = new Blob([rule.content], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${rule.title}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   if (loading) {
@@ -215,19 +220,22 @@ export default function PublicRulePage() {
                 <Terminal className="h-4 w-4 text-[#70A7D7]" />
                 <span className="text-sm font-semibold text-white">Install with shadcn CLI</span>
               </div>
-              <div className="flex items-center gap-2 bg-[#0F1419] rounded-lg p-3 border border-white/5">
+              <div className="flex items-center gap-2 bg-[#0F1419] rounded-lg p-2 border border-white/5">
+                <Button
+                  onClick={handleInstallCopy}
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-1 hover:bg-white/5 shrink-0"
+                >
+                  {cliCopied ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3 text-gray-400" />
+                  )}
+                </Button>
                 <code className="flex-1 text-sm text-gray-300 font-mono">
                   npx shadcn add {window.location.origin}/api/registry/{rule.id}
                 </code>
-                <Button
-                  onClick={handleInstallCopy}
-                  variant="primary"
-                  size="sm"
-                  className="text-xs px-2 py-1 h-auto"
-                >
-                  <Copy className="h-3 w-3" />
-                  Copy
-                </Button>
               </div>
               <div className="text-xs text-gray-400">
                 This will install the cursor rule to <code className="text-gray-300">~/.cursor/rules/{rule.title}.mdc</code>
@@ -239,21 +247,12 @@ export default function PublicRulePage() {
           <div className="flex items-center justify-between pt-[0]">
             <div className="flex items-center gap-3">
               <Button
-                onClick={handleInstallCopy}
-                variant="primary"
+                onClick={handleDownload}
+                variant="secondary"
                 size="sm"
               >
-                <Copy className="h-3 w-3" />
-                Copy CLI
-              </Button>
-              
-              <Button
-                onClick={handleCopyViewURL}
-                variant="primary"
-                size="sm"
-              >
-                <Share2 className="h-3 w-3" />
-                Copy View URL
+                <Download className="h-3 w-3" />
+                Download
               </Button>
               
               <Button

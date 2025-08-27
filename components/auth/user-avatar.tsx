@@ -58,7 +58,7 @@ export function UserAvatar() {
         if (response.ok) {
           const rules = await response.json()
           setRulesCount(rules.length)
-          
+
           // Calculate total views
           const totalViews = rules.reduce((sum: number, rule: any) => sum + rule.views, 0)
           setTotalViews(totalViews)
@@ -77,47 +77,47 @@ export function UserAvatar() {
     // Show fingerprint icon when not signed in
     return (
       <button
-      onClick={() => router.push('/login')}
-      className="w-[35px] h-[35px] transition-transform duration-200 hover:scale-105 relative"
-      title="Sign in"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
-        <g clipPath="url(#clip0_572_477)">
-          <mask id="mask0_572_477" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="0" y="0" width="35" height="35">
-            <path d="M34.5371 0.721191H0.537109V34.7212H34.5371V0.721191Z" fill="white" />
-          </mask>
-          <g mask="url(#mask0_572_477)">
-            <path d="M34.5371 0.721191H0.537109V34.7212H34.5371V0.721191Z" fill="#70A7D7" />
-            <g style={{ mixBlendMode: "screen" }} opacity="0.6" filter="url(#filter0_572_477)">
-              <path d="M68.7587 18.1098L36.3035 55.4453L27.8356 48.0843L31.4059 16.7693L31.1492 16.5462L14.1075 36.1506L4.02303 27.3843L36.4783 -9.95117L45.0744 -2.47866L41.3435 28.6066L41.6514 28.8742L58.6486 9.32122L68.7587 18.1098Z" fill="white" />
-            </g>
-            <g style={{ mixBlendMode: "screen" }} opacity="0.6" filter="url(#filter1_f_572_477)">
-              <path d="M44.7925 26.5398L48.5137 36.7637L8.09749 51.474L4.37631 41.2501L18.3702 36.1567L5.1484 -0.1699L17.6087 -4.70509L30.8422 31.6535L44.7925 26.5398Z" fill="#70A7D7" />
+        onClick={() => router.push('/login')}
+        className="w-[35px] h-[35px] transition-transform duration-200 hover:scale-105 relative"
+        title="Sign in"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
+          <g clipPath="url(#clip0_572_477)">
+            <mask id="mask0_572_477" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="0" y="0" width="35" height="35">
+              <path d="M34.5371 0.721191H0.537109V34.7212H34.5371V0.721191Z" fill="white" />
+            </mask>
+            <g mask="url(#mask0_572_477)">
+              <path d="M34.5371 0.721191H0.537109V34.7212H34.5371V0.721191Z" fill="#70A7D7" />
+              <g style={{ mixBlendMode: "screen" }} opacity="0.6" filter="url(#filter0_572_477)">
+                <path d="M68.7587 18.1098L36.3035 55.4453L27.8356 48.0843L31.4059 16.7693L31.1492 16.5462L14.1075 36.1506L4.02303 27.3843L36.4783 -9.95117L45.0744 -2.47866L41.3435 28.6066L41.6514 28.8742L58.6486 9.32122L68.7587 18.1098Z" fill="white" />
+              </g>
+              <g style={{ mixBlendMode: "screen" }} opacity="0.6" filter="url(#filter1_f_572_477)">
+                <path d="M44.7925 26.5398L48.5137 36.7637L8.09749 51.474L4.37631 41.2501L18.3702 36.1567L5.1484 -0.1699L17.6087 -4.70509L30.8422 31.6535L44.7925 26.5398Z" fill="#70A7D7" />
+              </g>
             </g>
           </g>
-        </g>
-        <defs>
-          <filter id="filter0_572_477" x="-27.9771" y="-41.9512" width="128.736" height="129.396" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix" />
-            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-            <feGaussianBlur stdDeviation="16" result="effect1_foregroundBlur_572_477" />
-          </filter>
-          <filter id="filter1_f_572_477" x="-27.6238" y="-36.7051" width="108.137" height="120.179" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix" />
-            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-            <feGaussianBlur stdDeviation="16" result="effect1_foregroundBlur_572_477" />
-          </filter>
-          <clipPath id="clip0_572_477">
-            <rect x="0.537109" y="0.721191" width="34" height="34" rx="6" fill="white" />
-          </clipPath>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-white font-semibold text-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><title>open-rect-arrow-in</title><g fill="#16171A"><path opacity="0.4" d="M13.25 2H9.75C9.336 2 9 2.336 9 2.75C9 3.164 9.336 3.5 9.75 3.5H13.25C13.939 3.5 14.5 4.061 14.5 4.75V13.25C14.5 13.939 13.939 14.5 13.25 14.5H9.75C9.336 14.5 9 14.836 9 15.25C9 15.664 9.336 16 9.75 16H13.25C14.767 16 16 14.767 16 13.25V4.75C16 3.233 14.767 2 13.25 2Z"></path> <path d="M10.78 8.46999L7.28 4.96999C6.987 4.67699 6.51199 4.67699 6.21899 4.96999C5.92599 5.26299 5.92599 5.73803 6.21899 6.03103L8.439 8.251H2.75C2.336 8.251 2 8.587 2 9.001C2 9.415 2.336 9.751 2.75 9.751H8.439L6.21899 11.971C5.92599 12.264 5.92599 12.739 6.21899 13.032C6.36499 13.178 6.55699 13.252 6.74899 13.252C6.94099 13.252 7.13301 13.179 7.27901 13.032L10.779 9.53201C11.072 9.23901 11.072 8.76397 10.779 8.47097L10.78 8.46999Z"></path></g></svg>
-        </span>
-      </div>
-    </button>
+          <defs>
+            <filter id="filter0_572_477" x="-27.9771" y="-41.9512" width="128.736" height="129.396" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+              <feFlood floodOpacity="0" result="BackgroundImageFix" />
+              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+              <feGaussianBlur stdDeviation="16" result="effect1_foregroundBlur_572_477" />
+            </filter>
+            <filter id="filter1_f_572_477" x="-27.6238" y="-36.7051" width="108.137" height="120.179" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+              <feFlood floodOpacity="0" result="BackgroundImageFix" />
+              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+              <feGaussianBlur stdDeviation="16" result="effect1_foregroundBlur_572_477" />
+            </filter>
+            <clipPath id="clip0_572_477">
+              <rect x="0.537109" y="0.721191" width="34" height="34" rx="6" fill="white" />
+            </clipPath>
+          </defs>
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white font-semibold text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><title>open-rect-arrow-in</title><g fill="#16171A"><path opacity="0.4" d="M13.25 2H9.75C9.336 2 9 2.336 9 2.75C9 3.164 9.336 3.5 9.75 3.5H13.25C13.939 3.5 14.5 4.061 14.5 4.75V13.25C14.5 13.939 13.939 14.5 13.25 14.5H9.75C9.336 14.5 9 14.836 9 15.25C9 15.664 9.336 16 9.75 16H13.25C14.767 16 16 14.767 16 13.25V4.75C16 3.233 14.767 2 13.25 2Z"></path> <path d="M10.78 8.46999L7.28 4.96999C6.987 4.67699 6.51199 4.67699 6.21899 4.96999C5.92599 5.26299 5.92599 5.73803 6.21899 6.03103L8.439 8.251H2.75C2.336 8.251 2 8.587 2 9.001C2 9.415 2.336 9.751 2.75 9.751H8.439L6.21899 11.971C5.92599 12.264 5.92599 12.739 6.21899 13.032C6.36499 13.178 6.55699 13.252 6.74899 13.252C6.94099 13.252 7.13301 13.179 7.27901 13.032L10.779 9.53201C11.072 9.23901 11.072 8.76397 10.779 8.47097L10.78 8.46999Z"></path></g></svg>
+          </span>
+        </div>
+      </button>
     )
   }
 
@@ -174,8 +174,13 @@ export function UserAvatar() {
         <div className="absolute right-0 top-full mt-2 w-64 bg-[#1B1D21] border border-white/10 rounded-lg shadow-lg z-50">
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
+
               <p className="text-sm font-medium text-white truncate">
+                {session.user.name ? `${session.user.name}` : "Anonymous"}
+                <br />
                 {session.user.email}
+
+
               </p>
               <button
                 onClick={async () => {

@@ -8,6 +8,8 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 
 interface CursorRule {
   id: string
@@ -107,6 +109,9 @@ export default function DashboardPage() {
   const [rules, setRules] = useState<CursorRule[]>([])
   const [rulesLoading, setRulesLoading] = useState(true)
   const [actionStates, setActionStates] = useState<{[key: string]: boolean}>({})
+  const [nameInput, setNameInput] = useState("")
+  const [showNamePrompt, setShowNamePrompt] = useState(false)
+  const [isUpdatingName, setIsUpdatingName] = useState(false)
 
   // Helper function to show checkmark feedback
   const showActionFeedback = (actionKey: string) => {
@@ -114,6 +119,41 @@ export default function DashboardPage() {
     setTimeout(() => {
       setActionStates(prev => ({ ...prev, [actionKey]: false }))
     }, 1500)
+  }
+
+  // Check if user needs to set their name
+  const needsNameUpdate = (user: any) => {
+    if (!user?.name) return true
+    if (user.name === user.email) return true
+    if (user.name.trim().length === 0) return true
+    return false
+  }
+
+  // Handle name update
+  const handleNameUpdate = async () => {
+    if (!nameInput.trim() || !session?.user?.id) return
+
+    setIsUpdatingName(true)
+    try {
+      const response = await fetch('/api/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameInput.trim() })
+      })
+
+      if (!response.ok) throw new Error('Failed to update name')
+
+      setShowNamePrompt(false)
+      toast.success("Name updated successfully!")
+      
+      // Refresh the session to get updated user data
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating name:', error)
+      toast.error("Failed to update name")
+    } finally {
+      setIsUpdatingName(false)
+    }
   }
 
   // Checkmark icon component
@@ -135,10 +175,26 @@ export default function DashboardPage() {
     })
   }
 
-  const handleCopyViewURL = async (ruleId: string) => {
-    const viewURL = `${window.location.origin}/rule/${ruleId}`
+  const createSlug = (title: string, ruleId: string): string => {
+    // Convert title to URL-friendly format
+    const urlTitle = title
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove any characters that aren't letters, numbers, or hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    
+    // Get last 3 characters of rule ID
+    const last3 = ruleId.slice(-3)
+    
+    return `${urlTitle}-${last3}`
+  }
+
+  const handleCopyViewURL = async (rule: CursorRule) => {
+    const slug = createSlug(rule.title, rule.id)
+    const viewURL = `${window.location.origin}/rule/${slug}`
     await navigator.clipboard.writeText(viewURL)
-    showActionFeedback(`link-${ruleId}`)
+    showActionFeedback(`link-${rule.id}`)
     toast.success("View URL copied to clipboard!", {
       description: "You can now paste it in your browser to view the rule."
     })
@@ -161,6 +217,42 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error deleting rule:', error)
       toast.error("Failed to delete rule")
+    }
+  }
+
+  // Handle making rule public
+  const handleMakePublic = async (rule: CursorRule) => {
+    try {
+      const response = await fetch('/api/cursor-rules', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: rule.id,
+          title: rule.title,
+          content: rule.content,
+          ruleType: rule.ruleType,
+          isPublic: true
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to make rule public')
+
+      const updatedRule = await response.json()
+
+      // Update the rule in local state
+      setRules(prevRules => 
+        prevRules.map(r => 
+          r.id === rule.id ? { ...r, isPublic: true } : r
+        )
+      )
+      
+      showActionFeedback(`public-${rule.id}`)
+      toast.success("Rule made public successfully!", {
+        description: "You can now share the view URL and CLI install command."
+      })
+    } catch (error) {
+      console.error('Error making rule public:', error)
+      toast.error("Failed to make rule public")
     }
   }
 
@@ -202,6 +294,14 @@ export default function DashboardPage() {
     }
   }, [session])
 
+  // Check if user needs to set their name
+  useEffect(() => {
+    if (session?.user && needsNameUpdate(session.user)) {
+      setShowNamePrompt(true)
+      setNameInput(session.user.name || "")
+    }
+  }, [session])
+
   // Show skeleton while loading
   if (isPending) {
     return <DashboardSkeleton />
@@ -221,6 +321,57 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Name prompt card */}
+          {showNamePrompt && (
+            <Card className="p-4 bg-blue-500/10 border border-blue-500/20">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="flex-shrink-0 mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-white mb-1">Complete your profile</h3>
+                    <p className="text-xs text-gray-400 mb-3">Add your name to personalize your experience</p>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="text"
+                        placeholder="Enter your name"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                        className="flex-1 bg-[#1B1D21] border-white/10 text-white text-sm h-8"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleNameUpdate()
+                          }
+                        }}
+                      />
+                      <Button
+                        onClick={handleNameUpdate}
+                        disabled={!nameInput.trim() || isUpdatingName}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 h-8"
+                      >
+                        {isUpdatingName ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowNamePrompt(false)}
+                  className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors"
+                  title="Dismiss"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </Card>
+          )}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium text-white">Your Cursor Rules</h2>
             <div className="text-sm text-gray-400">
@@ -293,50 +444,80 @@ export default function DashboardPage() {
 
                       {/* Right side - Action buttons */}
                       <div className="flex flex-col gap-2 flex-shrink-0 items-end">
-                        {/* First row - Copy CLI button */}
+                        {/* First row - Copy buttons for public rules, Make Public button for private rules */}
                         <div className="flex items-center gap-2">
-                                                     <button
-                             onClick={(e) => {
-                               e.stopPropagation()
-                               handleCopyViewURL(rule.id)
-                             }}
-                             className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
-                             title="Copy install command"
-                           >
-                             {actionStates[`link-${rule.id}`] ? (
-                               <CheckmarkIcon />
-                             ) : (
-                               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                                 <title>link-4</title>
-                                 <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
-                                   <path d="M5.25101 5.5V7.25V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V7.25V5.5C12.751 3.4289 11.0721 1.75 9.00101 1.75C6.92991 1.75 5.25101 3.4289 5.25101 5.5Z" fill="#70A7D7" fillOpacity="0.3" data-stroke="none" stroke="none"></path>
-                                   <path d="M5.25101 7.25V5.5C5.25101 3.4289 6.92991 1.75 9.00101 1.75C11.0721 1.75 12.751 3.4289 12.751 5.5V7.25"></path>
-                                   <path d="M5.25101 10.75V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V10.75"></path>
-                                   <path d="M9.00101 11.25V6.75"></path>
-                                 </g>
-                               </svg>
-                             )}
-                             <span className="text-xs text-gray-400">Copy Link</span>
-                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleCopyInstallCommand(rule.id)
-                            }}
-                            className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
-                            title="Copy install command"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                              <title>duplicate-plus-2</title>
-                              <g fill="#70A7D7">
-                                <path opacity="0.4" d="M10.75 1.5H4.25C2.73122 1.5 1.5 2.73122 1.5 4.25V10.75C1.5 12.2688 2.73122 13.5 4.25 13.5H10.75C12.2688 13.5 13.5 12.2688 13.5 10.75V4.25C13.5 2.73122 12.2688 1.5 10.75 1.5Z"></path>
-                                <path d="M13.5 4.25V10.75C13.5 12.2666 12.2666 13.5 10.75 13.5H4.9458L5.10019 14.5391C5.32309 16.0391 6.72429 17.0779 8.22449 16.855L14.6539 15.8999C16.154 15.677 17.1928 14.2756 16.9699 12.7756L16.0147 6.34619C15.8212 5.04399 14.739 4.09199 13.4756 4.00879C13.4827 4.08939 13.5 4.1675 13.5 4.25Z"></path>
-                                <path d="M7.5 4.5C7.9141 4.5 8.25 4.8359 8.25 5.25V9.75C8.25 10.1641 7.9141 10.5 7.5 10.5C7.0859 10.5 6.75 10.1641 6.75 9.75V5.25C6.75 4.8359 7.0859 4.5 7.5 4.5Z"></path>
-                                <path d="M5.25 6.75H9.75C10.1641 6.75 10.5 7.0859 10.5 7.5C10.5 7.9141 10.1641 8.25 9.75 8.25H5.25C4.8359 8.25 4.5 7.9141 4.5 7.5C4.5 7.0859 4.8359 6.75 5.25 6.75Z"></path>
-                              </g>
-                            </svg>
-                            <span className="text-xs text-gray-400">Copy CLI</span>
-                          </button>
+                          {rule.isPublic ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCopyViewURL(rule)
+                                }}
+                                className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
+                                title="Copy view URL"
+                              >
+                                {actionStates[`link-${rule.id}`] ? (
+                                  <CheckmarkIcon />
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                                    <title>link-4</title>
+                                    <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
+                                      <path d="M5.25101 5.5V7.25V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V7.25V5.5C12.751 3.4289 11.0721 1.75 9.00101 1.75C6.92991 1.75 5.25101 3.4289 5.25101 5.5Z" fill="#70A7D7" fillOpacity="0.3" data-stroke="none" stroke="none"></path>
+                                      <path d="M5.25101 7.25V5.5C5.25101 3.4289 6.92991 1.75 9.00101 1.75C11.0721 1.75 12.751 3.4289 12.751 5.5V7.25"></path>
+                                      <path d="M5.25101 10.75V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V10.75"></path>
+                                      <path d="M9.00101 11.25V6.75"></path>
+                                    </g>
+                                  </svg>
+                                )}
+                                <span className="text-xs text-gray-400">Copy Link</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCopyInstallCommand(rule.id)
+                                }}
+                                className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
+                                title="Copy install command"
+                              >
+                                {actionStates[`cli-${rule.id}`] ? (
+                                  <CheckmarkIcon />
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                                    <title>duplicate-plus-2</title>
+                                    <g fill="#70A7D7">
+                                      <path opacity="0.4" d="M10.75 1.5H4.25C2.73122 1.5 1.5 2.73122 1.5 4.25V10.75C1.5 12.2688 2.73122 13.5 4.25 13.5H10.75C12.2688 13.5 13.5 12.2688 13.5 10.75V4.25C13.5 2.73122 12.2688 1.5 10.75 1.5Z"></path>
+                                      <path d="M13.5 4.25V10.75C13.5 12.2666 12.2666 13.5 10.75 13.5H4.9458L5.10019 14.5391C5.32309 16.0391 6.72429 17.0779 8.22449 16.855L14.6539 15.8999C16.154 15.677 17.1928 14.2756 16.9699 12.7756L16.0147 6.34619C15.8212 5.04399 14.739 4.09199 13.4756 4.00879C13.4827 4.08939 13.5 4.1675 13.5 4.25Z"></path>
+                                      <path d="M7.5 4.5C7.9141 4.5 8.25 4.8359 8.25 5.25V9.75C8.25 10.1641 7.9141 10.5 7.5 10.5C7.0859 10.5 6.75 10.1641 6.75 9.75V5.25C6.75 4.8359 7.0859 4.5 7.5 4.5Z"></path>
+                                      <path d="M5.25 6.75H9.75C10.1641 6.75 10.5 7.0859 10.5 7.5C10.5 7.9141 10.1641 8.25 9.75 8.25H5.25C4.8359 8.25 4.5 7.9141 4.5 7.5C4.5 7.0859 4.8359 6.75 5.25 6.75Z"></path>
+                                    </g>
+                                  </svg>
+                                )}
+                                <span className="text-xs text-gray-400">Copy CLI</span>
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMakePublic(rule)
+                              }}
+                              className="flex items-center justify-end gap-1.5 px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-md transition-colors text-right"
+                              title="Make rule public"
+                            >
+                              {actionStates[`public-${rule.id}`] ? (
+                                <CheckmarkIcon />
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                                  <title>earth</title>
+                                  <g fill="#70A7D7">
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M1 9C1 4.58169 4.58169 1 9 1C13.4183 1 17 4.58169 17 9C17 13.4183 13.4183 17 9 17C4.58169 17 1 13.4183 1 9Z" fillOpacity="0.4"></path>
+                                    <path d="M13.532 3.592C13.369 3.719 13.159 3.776 12.955 3.743C11.841 3.568 11.045 3.663 10.774 4.002C10.554 4.276 10.605 4.832 10.65 5.322C10.712 6.001 10.789 6.845 10.083 7.295C9.45315 7.69491 8.80129 7.37513 8.32432 7.14115C7.89832 6.93215 7.49302 6.734 7.07502 6.85C6.54702 6.996 6.25702 7.539 6.20402 7.646C5.96002 8.141 6.05502 8.663 6.18202 9.022C7.46602 8.769 8.56002 8.90099 9.44102 9.41699C9.87183 9.66976 10.2155 10.0146 10.533 10.395C10.782 10.694 10.856 10.767 11.013 10.796C11.286 10.851 11.556 10.672 11.972 10.383C12.5457 9.9828 13.1622 9.6273 13.89 9.76499C14.66 9.91099 15.272 10.525 15.755 11.618C15.9357 11.9641 16.0588 12.2997 16.1308 12.6246C14.8065 15.2191 12.1072 17 9.00006 17C8.53528 17 8.07963 16.9602 7.63634 16.8837C7.75522 16.4639 7.87307 16.0473 7.87902 16.026C7.95202 15.77 8.09202 15.128 7.81302 14.71C7.71702 14.565 7.61302 14.506 7.38702 14.387C6.97464 14.1698 6.61767 13.9044 6.37302 13.498C6.10112 13.0467 6.05352 12.5651 6.08102 12.051C6.09602 11.788 6.10702 11.58 6.01302 11.318C5.88402 10.96 5.62902 10.719 5.33502 10.499C5.17436 10.3613 4.9866 10.2495 4.81402 10.127C3.72702 9.33299 2.84702 8.135 2.16502 6.601C1.98335 6.2386 1.8577 5.88887 1.78186 5.55215C3.07209 2.86207 5.82283 1 9.00006 1C11.0181 1 12.8641 1.75122 14.2731 2.98868L13.532 3.592Z"></path>
+                                  </g>
+                                </svg>
+                              )}
+                              <span className="text-xs text-gray-400">Make Public</span>
+                            </button>
+                          )}
                         </div>
 
                         {/* Second row - Edit button */}

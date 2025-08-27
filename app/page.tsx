@@ -235,6 +235,21 @@ function HomePage() {
     }
   }
 
+  const createSlug = (title: string, ruleId: string): string => {
+    // Convert title to URL-friendly format
+    const urlTitle = title
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove any characters that aren't letters, numbers, or hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    
+    // Get last 3 characters of rule ID
+    const last3 = ruleId.slice(-3)
+    
+    return `${urlTitle}-${last3}`
+  }
+
   const handleShare = async () => {
     if (!session || !savedRuleId) return
 
@@ -252,8 +267,9 @@ function HomePage() {
         })
       })
 
-      // Copy public URL to clipboard
-      const publicUrl = `${window.location.origin}/${session.user.id}/${savedRuleId}`
+      // Create slug and copy public URL to clipboard
+      const slug = createSlug(localTitle, savedRuleId)
+      const publicUrl = `${window.location.origin}/rule/${slug}`
       await navigator.clipboard.writeText(publicUrl)
 
       // Update local and URL state
@@ -289,7 +305,8 @@ function HomePage() {
       return
     }
 
-    const publicUrl = `${window.location.origin}/${session.user.id}/${savedRuleId}`
+    const slug = createSlug(localTitle, savedRuleId)
+    const publicUrl = `${window.location.origin}/rule/${slug}`
     await navigator.clipboard.writeText(publicUrl)
     toast.success("View URL copied to clipboard!")
   }
@@ -300,6 +317,14 @@ function HomePage() {
     setSavedRuleId(null)
     setIsShared(false)
     toast.success("Rule cloned! You can now modify and save as a new rule.")
+  }
+
+  const handleShareAnonLink = async () => {
+    const currentUrl = window.location.href
+    await navigator.clipboard.writeText(currentUrl)
+    toast.success("Anonymous link copied to clipboard!", {
+      description: "Anyone can view this rule with this link"
+    })
   }
 
   const handleMagicLinkSent = (email: string) => {
@@ -547,6 +572,17 @@ UI and Styling
 
               </div>
               <div className="flex items-center gap-3">
+                {!savedRuleId && (
+                  <Button
+                    onClick={handleShareAnonLink}
+                    disabled={!localContent.trim()}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    <Share2 className="h-3 w-3" />
+                    Share anon link
+                  </Button>
+                )}
                 {savedRuleId && (
                   <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${isPublic
                       ? "bg-green-500/10 text-green-400"
