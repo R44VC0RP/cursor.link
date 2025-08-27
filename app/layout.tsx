@@ -3,6 +3,11 @@ import type { Metadata } from "next"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { ReactScanInit } from "@/components/react-scan-init"
 import { Toaster } from "@/components/ui/sonner"
+import Script from "next/script"
+import { headers as nextHeaders } from "next/headers"
+import { auth } from "@/lib/auth"
+import { AuthHydrator } from "@/components/auth/auth-hydrator"
+import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -11,17 +16,24 @@ export const metadata: Metadata = {
   generator: "v0.app & ryan",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const hdrs = await nextHeaders()
+  const session = await auth.api.getSession({ headers: hdrs })
+  const sessionJson = JSON.stringify(session ?? null).replace(/</g, "\\u003c")
+
   return (
     <html lang="en" className="dark">
+      
       <body className="font-sans antialiased">
+        <AuthHydrator initialSession={session} />
         <ReactScanInit />
         <NuqsAdapter>{children}</NuqsAdapter>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   )

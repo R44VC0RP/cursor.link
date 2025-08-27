@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { MagicLinkForm } from "@/components/auth/magic-link-form"
+import { track } from "@vercel/analytics"
 
 function HomePage() {
   const { data: session } = useSession()
@@ -219,6 +220,12 @@ function HomePage() {
 
       const rule = await response.json()
       setSavedRuleId(rule.id)
+      track("Rule Saved", {
+        isUpdate: Boolean(savedRuleId),
+        ruleType: selectedRule,
+        titleLength: localTitle.length,
+        contentLength: localContent.length,
+      })
       
       // If this was a new rule (no existing savedRuleId), update URL to put user in edit mode
       if (!savedRuleId) {
@@ -271,6 +278,11 @@ function HomePage() {
       const slug = createSlug(localTitle, savedRuleId)
       const publicUrl = `${window.location.origin}/rule/${slug}`
       await navigator.clipboard.writeText(publicUrl)
+      track("Rule Shared", {
+        ruleId: savedRuleId,
+        ruleType: selectedRule,
+        contentLength: localContent.length,
+      })
 
       // Update local and URL state
       setIsShared(true)
@@ -294,6 +306,7 @@ function HomePage() {
 
     const cliCommand = `npx shadcn add ${window.location.origin}/api/registry/${savedRuleId}`
     await navigator.clipboard.writeText(cliCommand)
+    track("CLI Copied", { ruleId: savedRuleId })
     toast.success("CLI command copied to clipboard!", {
       description: "You can now paste it in your terminal to install the rule."
     })
@@ -308,6 +321,7 @@ function HomePage() {
     const slug = createSlug(localTitle, savedRuleId)
     const publicUrl = `${window.location.origin}/rule/${slug}`
     await navigator.clipboard.writeText(publicUrl)
+    track("View URL Copied", { ruleId: savedRuleId })
     toast.success("View URL copied to clipboard!")
   }
 
@@ -316,12 +330,14 @@ function HomePage() {
     setUrlEditId("")
     setSavedRuleId(null)
     setIsShared(false)
+    track("Rule Forked", { fromRuleId: savedRuleId ?? null })
     toast.success("Rule cloned! You can now modify and save as a new rule.")
   }
 
   const handleShareAnonLink = async () => {
     const currentUrl = window.location.href
     await navigator.clipboard.writeText(currentUrl)
+    track("Anon Link Copied")
     toast.success("Anonymous link copied to clipboard!", {
       description: "Anyone can view this rule with this link"
     })
@@ -339,6 +355,7 @@ function HomePage() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(localContent)
+    track("Content Copied", { contentLength: localContent.length })
   }
 
   const handleDownload = () => {
@@ -351,6 +368,7 @@ function HomePage() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+    track("Rule Downloaded", { contentLength: localContent.length })
   }
 
   const handleRuleChange = (ruleId: string) => {
@@ -369,6 +387,7 @@ function HomePage() {
       setUrlContent(newContent) // Update URL immediately for rule changes
     }
     setIsDropdownOpen(false)
+    track("Rule Type Changed", { ruleType: ruleId })
   }
 
   return (

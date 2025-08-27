@@ -10,6 +10,7 @@ import { Copy, Eye, Download, Terminal, Check } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { track } from "@vercel/analytics"
 
 interface CursorRule {
   id: string
@@ -93,6 +94,7 @@ export default function PublicRulePage() {
 
         const ruleData = await response.json()
         setRule(ruleData)
+        track("Public Rule Viewed", { ruleId: ruleData.id })
         
         // Count tokens
         if (ruleData.content.trim()) {
@@ -120,6 +122,7 @@ export default function PublicRulePage() {
     
     await navigator.clipboard.writeText(rule.content)
     setCopied(true)
+    track("Public Rule Content Copied", { ruleId: rule.id })
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -129,6 +132,7 @@ export default function PublicRulePage() {
     const installCommand = `npx shadcn add ${window.location.origin}/api/registry/${rule.id}`
     await navigator.clipboard.writeText(installCommand)
     setCliCopied(true)
+    track("CLI Copied", { ruleId: rule.id })
     setTimeout(() => setCliCopied(false), 2000)
     toast.success("Install command copied to clipboard!")
   }
@@ -147,6 +151,7 @@ export default function PublicRulePage() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+    track("Public Rule Downloaded", { ruleId: rule.id })
   }
 
   if (loading) {

@@ -102,5 +102,3 @@ export async function GET(
   }
 }
 
-// Export the slug creation function for use in other parts of the app
-export { createSlug }

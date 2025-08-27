@@ -6,6 +6,21 @@ export const authClient = createAuthClient({
   plugins: [magicLinkClient()],
 })
 
+// Pre-hydrate session store from server-injected data to avoid flicker
+if (typeof window !== "undefined") {
+  const injected = (window as any).__BETTER_AUTH_SESSION__
+  if (typeof injected !== "undefined") {
+    const current = authClient.$store.atoms.session.get()
+    authClient.$store.atoms.session.set({
+      data: injected ?? null,
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: current?.refetch,
+    })
+  }
+}
+
 export const {
   signIn,
   signOut,

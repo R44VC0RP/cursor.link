@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { authClient } from "@/lib/auth-client"
+import { track } from "@vercel/analytics"
 
 interface MagicLinkFormProps {
   isSuccess?: boolean
@@ -29,6 +30,7 @@ export function MagicLinkForm({
 
     setIsLoading(true)
     setError("")
+    track("Magic link requested")
 
     try {
       const result = await authClient.signIn.magicLink({
@@ -37,11 +39,14 @@ export function MagicLinkForm({
       })
 
       if (result.error) {
+        track("Magic link error")
         setError(result.error.message || "Something went wrong")
       } else {
+        track("Magic link sent")
         onMagicLinkSent?.(email)
       }
     } catch (err) {
+      track("Magic link error")
       setError("Failed to send magic link. Please try again.")
       console.error("Magic link error:", err)
     } finally {
@@ -84,6 +89,7 @@ export function MagicLinkForm({
             </p>
             <Button
               onClick={() => {
+                track("Magic link reset")
                 onResetForm?.()
                 setEmail("")
                 setError("")
@@ -110,6 +116,7 @@ export function MagicLinkForm({
       <div className="space-y-4">
         <Button
           onClick={async () => {
+            track("Sign in with GitHub clicked")
             setIsLoading(true)
             setError("")
             try {

@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { cursorRule } from "@/lib/schema"
 import { nanoid } from "nanoid"
 import { eq, or, and, desc } from "drizzle-orm"
+import { track } from "@vercel/analytics/server"
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     }).returning()
 
+    await track('Rule Created', { ruleId: id, isPublic, ruleType })
     return NextResponse.json(newRule)
   } catch (error) {
     console.error("Error creating cursor rule:", error)
@@ -138,6 +140,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Rule not found" }, { status: 404 })
     }
 
+    await track('Rule Updated', { ruleId: id, isPublic: Boolean(isPublic), ruleType })
     return NextResponse.json(updatedRule)
   } catch (error) {
     console.error("Error updating cursor rule:", error)
@@ -171,6 +174,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Rule not found or unauthorized" }, { status: 404 })
     }
 
+    await track('Rule Deleted', { ruleId: id })
     return NextResponse.json({ message: "Rule deleted successfully" })
   } catch (error) {
     console.error("Error deleting cursor rule:", error)

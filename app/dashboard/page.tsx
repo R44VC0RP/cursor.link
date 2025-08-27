@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
+import { track } from "@vercel/analytics"
 
 interface CursorRule {
   id: string
@@ -145,6 +146,7 @@ export default function DashboardPage() {
 
       setShowNamePrompt(false)
       toast.success("Name updated successfully!")
+      track("Profile Name Updated")
       
       // Refresh the session to get updated user data
       window.location.reload()
@@ -170,6 +172,7 @@ export default function DashboardPage() {
     const installCommand = `npx shadcn add ${window.location.origin}/api/registry/${ruleId}`
     await navigator.clipboard.writeText(installCommand)
     showActionFeedback(`cli-${ruleId}`)
+    track("CLI Copied", { ruleId })
     toast.success("Install command copied to clipboard!", {
       description: "You can now paste it in your terminal to install the rule."
     })
@@ -195,6 +198,7 @@ export default function DashboardPage() {
     const viewURL = `${window.location.origin}/rule/${slug}`
     await navigator.clipboard.writeText(viewURL)
     showActionFeedback(`link-${rule.id}`)
+    track("View URL Copied", { ruleId: rule.id })
     toast.success("View URL copied to clipboard!", {
       description: "You can now paste it in your browser to view the rule."
     })
@@ -213,6 +217,7 @@ export default function DashboardPage() {
       // Remove the rule from the local state
       setRules(prevRules => prevRules.filter(rule => rule.id !== ruleId))
       showActionFeedback(`delete-${ruleId}`)
+      track("Rule Deleted", { ruleId })
       toast.success("Rule deleted successfully!")
     } catch (error) {
       console.error('Error deleting rule:', error)
@@ -247,6 +252,7 @@ export default function DashboardPage() {
       )
       
       showActionFeedback(`public-${rule.id}`)
+      track("Rule Made Public", { ruleId: rule.id })
       toast.success("Rule made public successfully!", {
         description: "You can now share the view URL and CLI install command."
       })
@@ -259,6 +265,7 @@ export default function DashboardPage() {
   // Handle editing rule
   const handleEditRule = (rule: CursorRule) => {
     showActionFeedback(`edit-${rule.id}`)
+    track("Rule Edit Triggered", { ruleId: rule.id })
     const params = new URLSearchParams({
       title: rule.title,
       content: rule.content,

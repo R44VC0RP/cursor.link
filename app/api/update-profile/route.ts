@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { user } from "@/lib/schema"
 import { eq } from "drizzle-orm"
+import { track } from "@vercel/analytics/server"
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    await track('Profile Updated', { userId: session.user.id })
     return NextResponse.json({ 
       message: "Profile updated successfully", 
       user: updatedUser 
