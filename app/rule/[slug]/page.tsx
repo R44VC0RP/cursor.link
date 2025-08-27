@@ -238,7 +238,14 @@ export default function PublicRulePage() {
                   {cliCopied ? (
                     <Check className="h-3 w-3 text-green-500" />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-400" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                      <title>duplicate</title>
+                      <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
+                        <path opacity="0.3" d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z" fill="#70A7D7" data-stroke="none" stroke="none"></path>
+                        <path d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z"></path>
+                        <path d="M12.4012 2.74998C12.0022 2.06148 11.2151 1.64837 10.38 1.77287L3.45602 2.80199C2.36402 2.96389 1.61003 3.98099 1.77203 5.07399L2.75002 11.6548"></path>
+                      </g>
+                    </svg>
                   )}
                 </Button>
                 <code className="flex-1 text-sm text-gray-300 font-mono">
@@ -268,8 +275,15 @@ export default function PublicRulePage() {
                 variant="secondary"
                 size="sm"
               >
-                <Copy className="h-3 w-3" />
-                {copied ? "Copied!" : "Copy Text"}
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                  <title>duplicate</title>
+                  <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
+                    <path opacity="0.3" d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z" fill="#70A7D7" data-stroke="none" stroke="none"></path>
+                    <path d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z"></path>
+                    <path d="M12.4012 2.74998C12.0022 2.06148 11.2151 1.64837 10.38 1.77287L3.45602 2.80199C2.36402 2.96389 1.61003 3.98099 1.77203 5.07399L2.75002 11.6548"></path>
+                  </g>
+                </svg>
+                {copied ? "Copied!" : "Copy Rule"}
               </Button>
 
               {/* Add to List button - only show if user is authenticated */}

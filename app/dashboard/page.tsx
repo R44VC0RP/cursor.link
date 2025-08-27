@@ -13,6 +13,12 @@ import { Card } from "@/components/ui/card"
 import { track } from "@vercel/analytics"
 import { UserLists } from "@/components/dashboard/user-lists"
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
 interface CursorRule {
   id: string
   title: string
@@ -161,7 +167,7 @@ export default function DashboardPage() {
 
   // Checkmark icon component
   const CheckmarkIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 18 18">
       <g fill="#70A7D7">
         <path d="M9 1.5C4.86 1.5 1.5 4.86 1.5 9C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9C16.5 4.86 13.14 1.5 9 1.5ZM7.5 12.75L3.75 9L5.16 7.59L7.5 9.93L12.84 4.59L14.25 6L7.5 12.75Z"/>
       </g>
@@ -470,54 +476,70 @@ export default function DashboardPage() {
                         {/* First row - Copy buttons for public rules, Make Public button for private rules */}
                         <div className="flex items-center gap-2">
                           {rule.isPublic ? (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCopyViewURL(rule)
-                                }}
-                                className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
-                                title="Copy view URL"
-                              >
-                                {actionStates[`link-${rule.id}`] ? (
-                                  <CheckmarkIcon />
-                                ) : (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                  }}
+                                  className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
+                                  title="Copy options"
+                                >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                                    <title>link-4</title>
+                                    <title>duplicate</title>
                                     <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
-                                      <path d="M5.25101 5.5V7.25V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V7.25V5.5C12.751 3.4289 11.0721 1.75 9.00101 1.75C6.92991 1.75 5.25101 3.4289 5.25101 5.5Z" fill="#70A7D7" fillOpacity="0.3" data-stroke="none" stroke="none"></path>
-                                      <path d="M5.25101 7.25V5.5C5.25101 3.4289 6.92991 1.75 9.00101 1.75C11.0721 1.75 12.751 3.4289 12.751 5.5V7.25"></path>
-                                      <path d="M5.25101 10.75V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V10.75"></path>
-                                      <path d="M9.00101 11.25V6.75"></path>
+                                      <path opacity="0.3" d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z" fill="#70A7D7" data-stroke="none" stroke="none"></path>
+                                      <path d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z"></path>
+                                      <path d="M12.4012 2.74998C12.0022 2.06148 11.2151 1.64837 10.38 1.77287L3.45602 2.80199C2.36402 2.96389 1.61003 3.98099 1.77203 5.07399L2.75002 11.6548"></path>
                                     </g>
                                   </svg>
-                                )}
-                                <span className="text-xs text-gray-400">Copy Link</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCopyInstallCommand(rule.id)
-                                }}
-                                className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
-                                title="Copy install command"
-                              >
-                                {actionStates[`cli-${rule.id}`] ? (
-                                  <CheckmarkIcon />
-                                ) : (
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                                    <title>duplicate-plus-2</title>
-                                    <g fill="#70A7D7">
-                                      <path opacity="0.4" d="M10.75 1.5H4.25C2.73122 1.5 1.5 2.73122 1.5 4.25V10.75C1.5 12.2688 2.73122 13.5 4.25 13.5H10.75C12.2688 13.5 13.5 12.2688 13.5 10.75V4.25C13.5 2.73122 12.2688 1.5 10.75 1.5Z"></path>
-                                      <path d="M13.5 4.25V10.75C13.5 12.2666 12.2666 13.5 10.75 13.5H4.9458L5.10019 14.5391C5.32309 16.0391 6.72429 17.0779 8.22449 16.855L14.6539 15.8999C16.154 15.677 17.1928 14.2756 16.9699 12.7756L16.0147 6.34619C15.8212 5.04399 14.739 4.09199 13.4756 4.00879C13.4827 4.08939 13.5 4.1675 13.5 4.25Z"></path>
-                                      <path d="M7.5 4.5C7.9141 4.5 8.25 4.8359 8.25 5.25V9.75C8.25 10.1641 7.9141 10.5 7.5 10.5C7.0859 10.5 6.75 10.1641 6.75 9.75V5.25C6.75 4.8359 7.0859 4.5 7.5 4.5Z"></path>
-                                      <path d="M5.25 6.75H9.75C10.1641 6.75 10.5 7.0859 10.5 7.5C10.5 7.9141 10.1641 8.25 9.75 8.25H5.25C4.8359 8.25 4.5 7.9141 4.5 7.5C4.5 7.0859 4.8359 6.75 5.25 6.75Z"></path>
-                                    </g>
-                                  </svg>
-                                )}
-                                <span className="text-xs text-gray-400">Copy CLI</span>
-                              </button>
-                            </>
+                                  <span className="text-xs text-gray-400">Copy</span>
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-28 p-1 bg-[#1B1D21] border border-white/10" align="center">
+                                <div className="space-y-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopyViewURL(rule)
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors text-left rounded-sm"
+                                  >
+                                    {actionStates[`link-${rule.id}`] ? (
+                                      <CheckmarkIcon />
+                                    ) : (
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 18 18">
+                                        <title>link-4</title>
+                                        <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
+                                          <path d="M5.25101 5.5V7.25V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V7.25V5.5C12.751 3.4289 11.0721 1.75 9.00101 1.75C6.92991 1.75 5.25101 3.4289 5.25101 5.5Z" fill="#70A7D7" fillOpacity="0.3" data-stroke="none" stroke="none"></path>
+                                          <path d="M5.25101 7.25V5.5C5.25101 3.4289 6.92991 1.75 9.00101 1.75C11.0721 1.75 12.751 3.4289 12.751 5.5V7.25"></path>
+                                          <path d="M5.25101 10.75V12.5C5.25101 14.5711 6.92991 16.25 9.00101 16.25C11.0721 16.25 12.751 14.5711 12.751 12.5V10.75"></path>
+                                          <path d="M9.00101 11.25V6.75"></path>
+                                        </g>
+                                      </svg>
+                                    )}
+                                    Link
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopyInstallCommand(rule.id)
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors text-left rounded-sm"
+                                  >
+                                    {actionStates[`cli-${rule.id}`] ? (
+                                      <CheckmarkIcon />
+                                    ) : (
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#70A7D7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4,17 10,11 4,5"/>
+                                        <line x1="12" y1="19" x2="20" y2="19"/>
+                                      </svg>
+                                    )}
+                                    CLI
+                                  </button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           ) : (
                             <button
                               onClick={(e) => {

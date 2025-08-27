@@ -262,7 +262,7 @@ export default function PublicRulePage() {
                 size="sm"
               >
                 <Copy className="h-3 w-3" />
-                {copied ? "Copied!" : "Copy Text"}
+                {copied ? "Copied!" : "Copy Rule"}
               </Button>
               
               <div className="flex items-center gap-1 text-xs text-gray-500">
