@@ -14,6 +14,12 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: false, // Disable password auth since we only want magic link
   },
+  socialProviders: {
+    github: { 
+      clientId: process.env.GITHUB_CLIENT_ID as string, 
+      clientSecret: process.env.GITHUB_CLIENT_SECRET as string, 
+    }, 
+  },
   plugins: [
     magicLink({
       sendMagicLink: async ({ email, token, url }) => {

@@ -136,7 +136,7 @@ export default function DashboardPage() {
   }
 
   const handleCopyViewURL = async (ruleId: string) => {
-    const viewURL = `${window.location.origin}/api/registry/${ruleId}`
+    const viewURL = `${window.location.origin}/rule/${ruleId}`
     await navigator.clipboard.writeText(viewURL)
     showActionFeedback(`link-${ruleId}`)
     toast.success("View URL copied to clipboard!", {
