@@ -167,21 +167,22 @@ export default async function Image({ params }: { params: { slug: string } }) {
             </div>
           </div>
 
-          {/* Bottom section with icon and branding */}
+          {/* Bottom section with branding */}
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
               alignItems: 'center',
               padding: '40px 60px',
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
-            {/* Database icon in bottom left */}
+            {/* Icon + cursor.link branding */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                gap: '12px',
               }}
             >
               <svg
@@ -210,18 +211,16 @@ export default async function Image({ params }: { params: { slug: string } }) {
                   fill="#70A7D7"
                 />
               </svg>
-            </div>
-
-            {/* Cursor.link branding */}
-            <div
-              style={{
-                display: 'flex',
-                fontSize: '24px',
-                color: '#70A7D7',
-                fontWeight: '600',
-              }}
-            >
-              cursor.link
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '24px',
+                  color: '#70A7D7',
+                  fontWeight: '600',
+                }}
+              >
+                cursor.link
+              </div>
             </div>
           </div>
         </div>
