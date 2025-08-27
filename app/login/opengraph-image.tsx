@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og'
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { loadGeistFonts } from '@/lib/loadFont'
 
 // Image metadata
 export const alt = 'Sign In - cursor.link'
@@ -10,38 +9,11 @@ export const size = {
 }
 export const contentType = 'image/png'
 
-async function loadGeistFonts() {
-  // During build time, use filesystem access
-  // During runtime on Vercel, use fetch for better performance  
-  if (process.env.VERCEL_ENV || process.env.NODE_ENV === 'production') {
-    try {
-      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://cursor.link'
-      
-      const [geistSemiBoldRes, geistMediumRes] = await Promise.all([
-        fetch(new URL('/fonts/Geist-SemiBold.ttf', baseUrl)),
-        fetch(new URL('/fonts/Geist-Medium.ttf', baseUrl))
-      ])
-      
-      return Promise.all([
-        geistSemiBoldRes.arrayBuffer(),
-        geistMediumRes.arrayBuffer()
-      ])
-    } catch (error) {
-      // Fallback to filesystem if fetch fails
-      console.warn('Font fetch failed, falling back to filesystem:', error)
-    }
-  }
-  
-  // Use filesystem approach for local development and build time
-  return Promise.all([
-    readFile(join(process.cwd(), 'public/fonts/Geist-SemiBold.ttf')),
-    readFile(join(process.cwd(), 'public/fonts/Geist-Medium.ttf'))
-  ])
-}
-
 // Image generation
 export default async function Image() {
-  const [geistSemiBoldData, geistMediumData] = await loadGeistFonts()
+  // Load Geist fonts from Google Fonts
+  const text = 'Sign In to cursor.link Access your cursor rules and dashboard Start creating and sharing cursor rules with the community. Join thousands of developers building better AI workflows.'
+  const { geistMedium, geistSemiBold } = await loadGeistFonts(text)
 
   return new ImageResponse(
     (
@@ -182,13 +154,13 @@ export default async function Image() {
       fonts: [
         {
           name: 'Geist',
-          data: geistSemiBoldData,
+          data: geistSemiBold,
           style: 'normal',
           weight: 600,
         },
         {
           name: 'Geist',
-          data: geistMediumData,
+          data: geistMedium,
           style: 'normal',
           weight: 500,
         },

@@ -2,8 +2,7 @@ import { ImageResponse } from 'next/og'
 import { db } from "@/lib/db"
 import { cursorRule, user } from "@/lib/schema"
 import { eq, and, like } from "drizzle-orm"
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { loadGeistFonts } from '@/lib/loadFont'
 
 // Image metadata
 export const alt = 'Cursor Rule'
@@ -42,38 +41,8 @@ function createSlug(title: string, ruleId: string): string {
   return `${urlTitle}-${last3}`
 }
 
-async function loadGeistFonts() {
-  // During build time, use filesystem access
-  // During runtime on Vercel, use fetch for better performance  
-  if (process.env.VERCEL_ENV || process.env.NODE_ENV === 'production') {
-    try {
-      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://cursor.link'
-      
-      const [geistSemiBoldRes, geistMediumRes] = await Promise.all([
-        fetch(new URL('/fonts/Geist-SemiBold.ttf', baseUrl)),
-        fetch(new URL('/fonts/Geist-Medium.ttf', baseUrl))
-      ])
-      
-      return Promise.all([
-        geistSemiBoldRes.arrayBuffer(),
-        geistMediumRes.arrayBuffer()
-      ])
-    } catch (error) {
-      // Fallback to filesystem if fetch fails
-      console.warn('Font fetch failed, falling back to filesystem:', error)
-    }
-  }
-  
-  // Use filesystem approach for local development and build time
-  return Promise.all([
-    readFile(join(process.cwd(), 'public/fonts/Geist-SemiBold.ttf')),
-    readFile(join(process.cwd(), 'public/fonts/Geist-Medium.ttf'))
-  ])
-}
-
 // Image generation
 export default async function Image({ params }: { params: { slug: string } }) {
-  const [geistSemiBoldData, geistMediumData] = await loadGeistFonts()
   
   try {
 
@@ -123,6 +92,10 @@ export default async function Image({ params }: { params: { slug: string } }) {
     const truncatedContent = firstFiveLines.length > 300 
       ? firstFiveLines.substring(0, 300) + '...' 
       : firstFiveLines
+
+    // Load Geist fonts from Google Fonts with dynamic content
+    const text = `${matchingRule.title} by ${matchingRule.user?.name || 'Unknown Author'} ${truncatedContent} cursor.link`
+    const { geistMedium, geistSemiBold } = await loadGeistFonts(text)
 
     return new ImageResponse(
       (
@@ -259,13 +232,13 @@ export default async function Image({ params }: { params: { slug: string } }) {
         fonts: [
           {
             name: 'Geist',
-            data: geistSemiBoldData,
+            data: geistSemiBold,
             style: 'normal',
             weight: 600,
           },
           {
             name: 'Geist',
-            data: geistMediumData,
+            data: geistMedium,
             style: 'normal',
             weight: 500,
           },
@@ -273,6 +246,10 @@ export default async function Image({ params }: { params: { slug: string } }) {
       }
     )
   } catch (error) {
+    // Load basic fonts for fallback image
+    const fallbackText = 'Cursor Rule Not Found'
+    const { geistSemiBold: fallbackFont } = await loadGeistFonts(fallbackText)
+    
     // Fallback image in case of error
     return new ImageResponse(
       (
@@ -299,7 +276,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
         fonts: [
           {
             name: 'Geist',
-            data: geistSemiBoldData,
+            data: fallbackFont,
             style: 'normal',
             weight: 600,
           },
