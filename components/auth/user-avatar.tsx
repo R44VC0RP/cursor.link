@@ -38,12 +38,7 @@ export function UserAvatar() {
   const [totalViews, setTotalViews] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Show skeleton while loading
-  if (isPending) {
-    return <UserAvatarSkeleton />
-  }
-
-  // Close menu when clicking outside
+  // Close menu when clicking outside - always call this hook
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -60,7 +55,7 @@ export function UserAvatar() {
     }
   }, [showMenu])
 
-  // Fetch user stats when session is available
+  // Fetch user stats when session is available - always call this hook
   useEffect(() => {
     const fetchUserStats = async () => {
       if (!session) return
@@ -84,6 +79,11 @@ export function UserAvatar() {
       fetchUserStats()
     }
   }, [session, showMenu])
+
+  // Show skeleton while loading
+  if (isPending) {
+    return <UserAvatarSkeleton />
+  }
 
   if (!session) {
     // Show fingerprint icon when not signed in
