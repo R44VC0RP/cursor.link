@@ -9,6 +9,7 @@ import { Copy, Download, Share2, ChevronDown, Save } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { Header } from "@/components/header"
 import { useSession } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 export default function HomePage() {
   const { data: session } = useSession()
@@ -24,6 +25,18 @@ export default function HomePage() {
     shallow: true,
     throttleMs: 500 // Increased throttle for less frequent updates
   })
+  const [urlRuleType, setUrlRuleType] = useQueryState("ruleType", {
+    defaultValue: "always",
+    shallow: true
+  })
+  const [urlIsPublic, setUrlIsPublic] = useQueryState("isPublic", {
+    defaultValue: "false",
+    shallow: true
+  })
+  const [urlEditId, setUrlEditId] = useQueryState("editId", {
+    defaultValue: "",
+    shallow: true
+  })
   
   // Local state for immediate updates
   const [localTitle, setLocalTitle] = useState(urlTitle)
@@ -31,10 +44,10 @@ export default function HomePage() {
   
   const [isShared, setIsShared] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [savedRuleId, setSavedRuleId] = useState<string | null>(null)
+  const [savedRuleId, setSavedRuleId] = useState<string | null>(urlEditId || null)
   const [tokenCount, setTokenCount] = useState(0)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [selectedRule, setSelectedRule] = useState("always")
+  const [selectedRule, setSelectedRule] = useState(urlRuleType || "always")
   const dropdownRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cursorPositionRef = useRef<number>(0)
@@ -48,6 +61,17 @@ export default function HomePage() {
   useEffect(() => {
     setLocalContent(urlContent)
   }, [urlContent])
+
+  useEffect(() => {
+    setSelectedRule(urlRuleType || "always")
+  }, [urlRuleType])
+
+  useEffect(() => {
+    setSavedRuleId(urlEditId || null)
+    if (urlEditId && urlIsPublic === "true") {
+      setIsShared(true)
+    }
+  }, [urlEditId, urlIsPublic])
 
     // Debounced URL update for title with sanitization
   const handleTitleChange = useCallback((value: string) => {
@@ -214,10 +238,45 @@ export default function HomePage() {
       await navigator.clipboard.writeText(publicUrl)
       
       setIsShared(true)
-      setTimeout(() => setIsShared(false), 2000)
+      toast.success("Rule shared!", {
+        description: "Public URL copied to clipboard"
+      })
     } catch (error) {
       console.error('Error sharing rule:', error)
+      toast.error("Failed to share rule")
     }
+  }
+
+  const handleCopyCLI = async () => {
+    if (!savedRuleId) {
+      toast.error("Please save the rule first")
+      return
+    }
+    
+    const cliCommand = `npx shadcn add ${window.location.origin}/api/registry/${savedRuleId}`
+    await navigator.clipboard.writeText(cliCommand)
+    toast.success("CLI command copied to clipboard!", {
+      description: "You can now paste it in your terminal to install the rule."
+    })
+  }
+
+  const handleCopyViewURL = async () => {
+    if (!session || !savedRuleId) {
+      toast.error("Please save the rule first")
+      return
+    }
+    
+    const publicUrl = `${window.location.origin}/${session.user.id}/${savedRuleId}`
+    await navigator.clipboard.writeText(publicUrl)
+    toast.success("View URL copied to clipboard!")
+  }
+
+  const handleClone = () => {
+    // Clear the editId to create a new rule with same content
+    setUrlEditId("")
+    setSavedRuleId(null)
+    setIsShared(false)
+    toast.success("Rule cloned! You can now modify and save as a new rule.")
   }
 
   const handleCopy = () => {
@@ -337,33 +396,54 @@ UI and Styling
           <div className="flex items-center justify-between pt-[0]">
             <div className="flex items-center gap-3">
               {session && (
-                <button
-                  onClick={savedRuleId ? handleShare : handleSave}
-                  disabled={!localTitle.trim() || !localContent.trim() || isSaving}
-                  className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {savedRuleId ? (
+                <>
+                  <button
+                    onClick={savedRuleId ? handleShare : handleSave}
+                    disabled={!localTitle.trim() || !localContent.trim() || isSaving}
+                    className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed w-16"
+                  >
+                    {savedRuleId ? (
+                      <>
+                        <Share2 className="h-3 w-3" />
+                        Share
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3" />
+                        {isSaving ? "..." : "Save"}
+                      </>
+                    )}
+                  </button>
+
+                  {savedRuleId && (
                     <>
-                      <Share2 className="h-3 w-3" />
-                      {isShared ? "Copied!" : "Share"}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-3 w-3" />
-                      {isSaving ? "Saving..." : "Save"}
+                      <button
+                        onClick={handleCopyCLI}
+                        className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none"
+                      >
+                        <Copy className="h-3 w-3" />
+                        Copy CLI
+                      </button>
+
+                      <button
+                        onClick={handleCopyViewURL}
+                        className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none"
+                      >
+                        <Share2 className="h-3 w-3" />
+                        Copy View URL
+                      </button>
+
+                      <button
+                        onClick={handleClone}
+                        className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-gray-600 px-2 py-1 text-[12px] font-semibold text-white outline-none transition-colors duration-200 hover:bg-gray-500 focus:outline-none"
+                      >
+                        <Copy className="h-3 w-3" />
+                        Clone
+                      </button>
                     </>
                   )}
-                </button>
+                </>
               )}
-
-              <button
-                onClick={handleCopy}
-                disabled={!localContent.trim()}
-                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Copy className="h-3 w-3" />
-                Copy
-              </button>
 
               <button
                 onClick={handleDownload}

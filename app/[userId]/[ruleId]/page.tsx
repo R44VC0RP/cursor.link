@@ -6,8 +6,9 @@ import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Copy, Eye } from "lucide-react"
+import { Copy, Eye, Download, Terminal, Share2 } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
+import { toast } from "sonner"
 
 interface CursorRule {
   id: string
@@ -121,6 +122,22 @@ export default function PublicRulePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleCopyViewURL = async () => {
+    const currentUrl = window.location.href
+    await navigator.clipboard.writeText(currentUrl)
+    toast.success("View URL copied to clipboard!")
+  }
+
+  const handleInstallCopy = async () => {
+    if (!rule) return
+    
+    const installCommand = `npx shadcn add ${window.location.origin}/api/registry/${rule.id}`
+    await navigator.clipboard.writeText(installCommand)
+    toast.success("Install command copied to clipboard!", {
+      description: "You can now paste it in your terminal to install the rule."
+    })
+  }
+
   if (loading) {
     return <PublicRuleSkeleton />
   }
@@ -179,15 +196,62 @@ export default function PublicRulePage() {
             </Card>
           </div>
 
+          {/* Installation Instructions */}
+          <Card
+            className="border-0 bg-[#1B1D21] p-4"
+            style={{
+              border: "1px solid rgba(255, 255, 255, 0.04)",
+              boxShadow: "rgba(0, 0, 0, 0.06) 0px 18px 25.8px 0px",
+            }}
+          >
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Terminal className="h-4 w-4 text-[#70A7D7]" />
+                <span className="text-sm font-semibold text-white">Install with shadcn CLI</span>
+              </div>
+              <div className="flex items-center gap-2 bg-[#0F1419] rounded-lg p-3 border border-white/5">
+                <code className="flex-1 text-sm text-gray-300 font-mono">
+                  npx shadcn add {window.location.origin}/api/registry/{rule.id}
+                </code>
+                <button
+                  onClick={handleInstallCopy}
+                  className="flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-[#70A7D7] text-[#2A2A2A] hover:bg-[#90BAE0] transition-colors"
+                >
+                  <Copy className="h-3 w-3" />
+                  Copy
+                </button>
+              </div>
+              <div className="text-xs text-gray-400">
+                This will install the cursor rule to <code className="text-gray-300">~/.cursor/rules/{rule.id}.mdc</code>
+              </div>
+            </div>
+          </Card>
+
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-[0]">
             <div className="flex items-center gap-3">
               <button
-                onClick={handleCopy}
+                onClick={handleInstallCopy}
                 className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none"
               >
                 <Copy className="h-3 w-3" />
-                {copied ? "Copied!" : "Copy"}
+                Copy CLI
+              </button>
+              
+              <button
+                onClick={handleCopyViewURL}
+                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none"
+              >
+                <Share2 className="h-3 w-3" />
+                Copy View URL
+              </button>
+              
+              <button
+                onClick={handleCopy}
+                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-gray-600 px-2 py-1 text-[12px] font-semibold text-white outline-none transition-colors duration-200 hover:bg-gray-500 focus:outline-none"
+              >
+                <Copy className="h-3 w-3" />
+                {copied ? "Copied!" : "Copy Text"}
               </button>
               
               <div className="flex items-center gap-1 text-xs text-gray-500">

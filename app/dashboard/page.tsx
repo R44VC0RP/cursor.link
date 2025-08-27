@@ -5,6 +5,7 @@ import { MagicLinkForm } from "@/components/auth/magic-link-form"
 import { Header } from "@/components/header"
 import { redirect } from "next/navigation"
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 
 interface CursorRule {
   id: string
@@ -104,6 +105,27 @@ export default function DashboardPage() {
   const [rules, setRules] = useState<CursorRule[]>([])
   const [rulesLoading, setRulesLoading] = useState(true)
 
+  // Handle copying shadcn install command
+  const handleCopyInstallCommand = async (ruleId: string) => {
+    const installCommand = `npx shadcn add ${window.location.origin}/api/registry/${ruleId}`
+    await navigator.clipboard.writeText(installCommand)
+    toast.success("Install command copied to clipboard!", {
+      description: "You can now paste it in your terminal to install the rule."
+    })
+  }
+
+  // Handle editing rule
+  const handleEditRule = (rule: CursorRule) => {
+    const params = new URLSearchParams({
+      title: rule.title,
+      content: rule.content,
+      ruleType: rule.ruleType,
+      isPublic: rule.isPublic.toString(),
+      editId: rule.id
+    })
+    window.location.href = `/?${params.toString()}`
+  }
+
   // Fetch user's rules
   useEffect(() => {
     const fetchRules = async () => {
@@ -180,38 +202,86 @@ export default function DashboardPage() {
                 {rules.map((rule) => (
                   <div 
                     key={rule.id} 
-                    className="p-4 bg-[#1B1D21] border border-white/10 rounded-lg hover:border-white/20 transition-colors cursor-pointer"
-                    onClick={() => window.location.href = `/?title=${encodeURIComponent(rule.title)}&content=${encodeURIComponent(rule.content)}`}
+                    className="p-4 bg-[#1B1D21] border border-white/10 rounded-lg hover:border-white/20 transition-colors"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                          <title>compose-3</title>
-                          <g fill="#70A7D7">
-                            <path d="M4.75 2C3.23079 2 2 3.23079 2 4.75V13.25C2 14.7692 3.23079 16 4.75 16H13.25C14.7692 16 16 14.7692 16 13.25V4.75C16 3.23079 14.7692 2 13.25 2H4.75Z" fillOpacity="0.4"></path>
-                            <path d="M16.9203 2.10469C17.0492 1.86207 17.0351 1.56839 16.8836 1.33921C16.7321 1.11003 16.4674 0.982029 16.1937 1.00558C11.5935 1.40129 8.92498 3.89611 7.4184 6.37012C5.92835 8.817 5.56482 11.2509 5.50782 11.6418C5.44806 12.0517 5.73189 12.4324 6.14177 12.4922C6.55165 12.5519 6.93237 12.2681 6.99213 11.8582C7.01886 11.6749 7.13344 10.9067 7.4627 9.88243C7.66774 9.9158 7.87256 9.95107 8.0774 9.98635C8.4907 10.0575 8.90407 10.1287 9.31953 10.1844C10.5757 10.3525 11.9097 10.3279 13.0091 9.81425C13.5291 9.57128 13.9762 9.22841 14.3298 8.77989C13.2293 8.62136 12.2835 8.05888 11.85 7.70001C12.627 7.70001 13.4396 7.66594 14.154 7.45121C14.5836 7.32212 14.9751 7.12566 15.3021 6.84819C15.7633 6.45675 16.0878 5.89944 16.2221 5.3104C16.3331 4.82343 16.4123 4.32551 16.4827 3.88323C16.5104 3.70902 16.5367 3.54344 16.5631 3.39056C16.6634 2.80913 16.7659 2.39542 16.9203 2.10469Z"></path>
-                          </g>
-                        </svg>
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Left side - Rule info */}
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0 mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <title>compose-3</title>
+                            <g fill="#70A7D7">
+                              <path d="M4.75 2C3.23079 2 2 3.23079 2 4.75V13.25C2 14.7692 3.23079 16 4.75 16H13.25C14.7692 16 16 14.7692 16 13.25V4.75C16 3.23079 14.7692 2 13.25 2H4.75Z" fillOpacity="0.4"></path>
+                              <path d="M16.9203 2.10469C17.0492 1.86207 17.0351 1.56839 16.8836 1.33921C16.7321 1.11003 16.4674 0.982029 16.1937 1.00558C11.5935 1.40129 8.92498 3.89611 7.4184 6.37012C5.92835 8.817 5.56482 11.2509 5.50782 11.6418C5.44806 12.0517 5.73189 12.4324 6.14177 12.4922C6.55165 12.5519 6.93237 12.2681 6.99213 11.8582C7.01886 11.6749 7.13344 10.9067 7.4627 9.88243C7.66774 9.9158 7.87256 9.95107 8.0774 9.98635C8.4907 10.0575 8.90407 10.1287 9.31953 10.1844C10.5757 10.3525 11.9097 10.3279 13.0091 9.81425C13.5291 9.57128 13.9762 9.22841 14.3298 8.77989C13.2293 8.62136 12.2835 8.05888 11.85 7.70001C12.627 7.70001 13.4396 7.66594 14.154 7.45121C14.5836 7.32212 14.9751 7.12566 15.3021 6.84819C15.7633 6.45675 16.0878 5.89944 16.2221 5.3104C16.3331 4.82343 16.4123 4.32551 16.4827 3.88323C16.5104 3.70902 16.5367 3.54344 16.5631 3.39056C16.6634 2.80913 16.7659 2.39542 16.9203 2.10469Z"></path>
+                            </g>
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-white text-sm truncate">
+                              {rule.title}
+                            </h3>
+                            {rule.isPublic && (
+                              <span className="px-2 py-0.5 bg-green-500/10 text-green-400 text-xs rounded-full flex-shrink-0">
+                                Public
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 mb-2 line-clamp-2">
+                            {truncateContent(rule.content)}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Updated {formatRelativeTime(rule.updatedAt)}</span>
+                            <span>{rule.views.toLocaleString()} views</span>
+                            <span className="capitalize text-gray-600">{rule.ruleType}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-white text-sm truncate">
-                            {rule.title}
-                          </h3>
-                          {rule.isPublic && (
-                            <span className="px-2 py-0.5 bg-green-500/10 text-green-400 text-xs rounded-full flex-shrink-0">
-                              Public
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-400 mb-2 line-clamp-2">
-                          {truncateContent(rule.content)}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Updated {formatRelativeTime(rule.updatedAt)}</span>
-                          <span>{rule.views.toLocaleString()} views</span>
-                          <span className="capitalize text-gray-600">{rule.ruleType}</span>
-                        </div>
+
+                      {/* Right side - Action buttons */}
+                      <div className="flex flex-col gap-2 flex-shrink-0 items-end">
+                        {/* Copy shadcn command button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleCopyInstallCommand(rule.id)
+                          }}
+                          className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
+                          title="Copy install command"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <title>duplicate-plus-2</title>
+                            <g fill="#70A7D7">
+                              <path opacity="0.4" d="M10.75 1.5H4.25C2.73122 1.5 1.5 2.73122 1.5 4.25V10.75C1.5 12.2688 2.73122 13.5 4.25 13.5H10.75C12.2688 13.5 13.5 12.2688 13.5 10.75V4.25C13.5 2.73122 12.2688 1.5 10.75 1.5Z"></path>
+                              <path d="M13.5 4.25V10.75C13.5 12.2666 12.2666 13.5 10.75 13.5H4.9458L5.10019 14.5391C5.32309 16.0391 6.72429 17.0779 8.22449 16.855L14.6539 15.8999C16.154 15.677 17.1928 14.2756 16.9699 12.7756L16.0147 6.34619C15.8212 5.04399 14.739 4.09199 13.4756 4.00879C13.4827 4.08939 13.5 4.1675 13.5 4.25Z"></path>
+                              <path d="M7.5 4.5C7.9141 4.5 8.25 4.8359 8.25 5.25V9.75C8.25 10.1641 7.9141 10.5 7.5 10.5C7.0859 10.5 6.75 10.1641 6.75 9.75V5.25C6.75 4.8359 7.0859 4.5 7.5 4.5Z"></path>
+                              <path d="M5.25 6.75H9.75C10.1641 6.75 10.5 7.0859 10.5 7.5C10.5 7.9141 10.1641 8.25 9.75 8.25H5.25C4.8359 8.25 4.5 7.9141 4.5 7.5C4.5 7.0859 4.8359 6.75 5.25 6.75Z"></path>
+                            </g>
+                          </svg>
+                          <span className="text-xs text-gray-400">Copy CLI</span>
+                        </button>
+
+                        {/* Edit button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditRule(rule)
+                          }}
+                          className="flex items-center justify-end gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-right"
+                          title="Edit rule"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <title>file-pen</title>
+                            <g fill="#70A7D7">
+                              <path fillRule="evenodd" clipRule="evenodd" d="M8.76417 17C8.78227 16.8363 8.81853 16.6732 8.8736 16.5136L9.79447 13.8428C9.90579 13.5205 10.0889 13.2277 10.3303 12.9863L13.4927 9.82397C14.1676 9.15057 15.0937 8.84071 15.999 8.89668V6.66302C15.999 6.19602 15.817 5.75602 15.486 5.42602L11.572 1.51202C11.241 1.18102 10.802 0.999023 10.335 0.999023H4.75C3.233 0.999023 2 2.23202 2 3.74902V14.25C2 15.767 3.233 17 4.75 17H8.76417Z" fillOpacity="0.4"></path>
+                              <path d="M17.3627 11.2217L17.0273 10.8863C16.3671 10.2247 15.2143 10.2252 14.5522 10.8858L11.391 14.0469C11.3104 14.1275 11.2494 14.2251 11.2123 14.3325L10.2914 17.0034C10.1976 17.2749 10.267 17.5757 10.4701 17.7783C10.6132 17.9214 10.8046 17.998 11.0004 17.998C11.0824 17.998 11.165 17.9848 11.245 17.957L13.9159 17.0361C14.0233 16.999 14.121 16.938 14.2015 16.8574L17.3626 13.6963C17.6932 13.3657 17.8753 12.9263 17.8753 12.459C17.8753 11.9912 17.6933 11.5518 17.3627 11.2217Z"></path>
+                              <path d="M7.75 5.99902H5.75C5.336 5.99902 5 6.33502 5 6.74902C5 7.16302 5.336 7.49902 5.75 7.49902H7.75C8.164 7.49902 8.5 7.16302 8.5 6.74902C8.5 6.33502 8.164 5.99902 7.75 5.99902Z"></path>
+                              <path d="M5.75 8.99902C5.336 8.99902 5 9.33502 5 9.74902C5 10.163 5.336 10.499 5.75 10.499H10.25C10.664 10.499 11 10.163 11 9.74902C11 9.33502 10.664 8.99902 10.25 8.99902H5.75Z"></path>
+                              <path d="M15.8691 6.00095H12C11.45 6.00095 11 5.55095 11 5.00095V1.13098C11.212 1.21803 11.4068 1.34674 11.572 1.51197L15.487 5.42697C15.6527 5.59263 15.7818 5.78817 15.8691 6.00095Z"></path>
+                            </g>
+                          </svg>
+                          <span className="text-xs text-gray-400">Edit</span>
+                        </button>
                       </div>
                     </div>
                   </div>

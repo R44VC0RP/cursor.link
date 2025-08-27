@@ -3,7 +3,69 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { cursorRule } from "@/lib/schema"
 import { nanoid } from "nanoid"
-import { eq } from "drizzle-orm"
+import { eq, or, and, desc } from "drizzle-orm"
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const ruleId = searchParams.get("ruleId")
+    
+    // Try to get session (but don't require it)
+    const session = await auth.api.getSession({
+      headers: request.headers
+    }).catch(() => null)
+
+    // Build where condition based on authentication and ruleId
+    let whereCondition
+
+    if (ruleId) {
+      // Fetching specific rule
+      if (session) {
+        // Authenticated: can access their own rules (public or private) + public rules from others
+        whereCondition = or(
+          and(eq(cursorRule.id, ruleId), eq(cursorRule.userId, session.user.id)),
+          and(eq(cursorRule.id, ruleId), eq(cursorRule.isPublic, true))
+        )
+      } else {
+        // Unauthenticated: only public rules
+        whereCondition = and(eq(cursorRule.id, ruleId), eq(cursorRule.isPublic, true))
+      }
+    } else {
+      // Fetching multiple rules
+      if (session) {
+        // Authenticated: their own rules + public rules from others
+        whereCondition = or(
+          eq(cursorRule.userId, session.user.id),
+          eq(cursorRule.isPublic, true)
+        )
+      } else {
+        // Unauthenticated: only public rules
+        whereCondition = eq(cursorRule.isPublic, true)
+      }
+    }
+
+    const rules = await db
+      .select({
+        id: cursorRule.id,
+        title: cursorRule.title,
+        content: cursorRule.content,
+        ruleType: cursorRule.ruleType,
+        isPublic: cursorRule.isPublic,
+        views: cursorRule.views,
+        createdAt: cursorRule.createdAt,
+        updatedAt: cursorRule.updatedAt,
+      })
+      .from(cursorRule)
+      .where(whereCondition)
+      .orderBy(desc(cursorRule.updatedAt))
+      .limit(100)
+
+    return NextResponse.json(rules)
+  } catch (error) {
+    console.error("Error fetching cursor rules:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

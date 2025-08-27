@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { ReactScanInit } from "@/components/react-scan-init"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -20,6 +21,18 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ReactScanInit />
         <NuqsAdapter>{children}</NuqsAdapter>
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: '#1B1D21',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'white',
+            },
+            className: 'sonner-toast',
+          }}
+        />
       </body>
     </html>
   )
