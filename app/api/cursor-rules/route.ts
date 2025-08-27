@@ -125,6 +125,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "ID, title and content are required" }, { status: 400 })
     }
 
+    // Only update rules that belong to the authenticated user
     const [updatedRule] = await db.update(cursorRule)
       .set({
         title,
@@ -133,11 +134,14 @@ export async function PUT(request: NextRequest) {
         isPublic,
         updatedAt: new Date(),
       })
-      .where(eq(cursorRule.id, id))
+      .where(and(
+        eq(cursorRule.id, id),
+        eq(cursorRule.userId, session.user.id)
+      ))
       .returning()
 
     if (!updatedRule) {
-      return NextResponse.json({ error: "Rule not found" }, { status: 404 })
+      return NextResponse.json({ error: "Rule not found or unauthorized" }, { status: 404 })
     }
 
     await track('Rule Updated', { ruleId: id, isPublic: Boolean(isPublic), ruleType })

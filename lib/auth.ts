@@ -3,9 +3,10 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { magicLink } from "better-auth/plugins"
 import { Inbound } from "@inboundemail/sdk"
 import { db } from "./db"
+import { env } from "./env"
 
 // Initialize Inbound for email sending
-const inbound = new Inbound(process.env.INBOUND_API_KEY!)
+const inbound = new Inbound(env.INBOUND_API_KEY)
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -16,8 +17,8 @@ export const auth = betterAuth({
   },
   socialProviders: {
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      clientId: env.GITHUB_CLIENT_ID,
+      clientSecret: env.GITHUB_CLIENT_SECRET,
     },
   },
   plugins: [

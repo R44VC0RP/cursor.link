@@ -57,3 +57,18 @@ export const cursorRule = pgTable("cursor_rule", {
   createdAt: timestamp("createdAt").notNull(),
   updatedAt: timestamp("updatedAt").notNull(),
 })
+
+export const list = pgTable("list", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
+export const listRule = pgTable("list_rule", {
+  id: text("id").primaryKey(),
+  listId: text("listId").notNull().references(() => list.id, { onDelete: "cascade" }),
+  ruleId: text("ruleId").notNull().references(() => cursorRule.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull(),
+})

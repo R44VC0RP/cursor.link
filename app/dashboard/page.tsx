@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { track } from "@vercel/analytics"
+import { UserLists } from "@/components/dashboard/user-lists"
 
 interface CursorRule {
   id: string
@@ -323,7 +324,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#16171A] text-white">
       <div className="max-w-4xl mx-auto p-6">
         <Header />
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
         </div>
 
@@ -379,6 +380,9 @@ export default function DashboardPage() {
               </div>
             </Card>
           )}
+
+          {/* User Lists Section */}
+          <UserLists />
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium text-white">Your Cursor Rules</h2>
             <div className="text-sm text-gray-400">
@@ -387,9 +391,9 @@ export default function DashboardPage() {
           </div>
 
           {rulesLoading ? (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="p-4 bg-[#1B1D21] border border-white/10 rounded-lg">
+                <div key={index} className="p-3 bg-[#1B1D21] border border-white/10 rounded-lg">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-1">
                       <div className="w-[18px] h-[18px] bg-[#2A2D32] rounded animate-pulse"></div>
@@ -409,15 +413,15 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              <div className="grid gap-4">
+              <div className="grid gap-3">
                 {rules.map((rule) => (
                   <div
                     key={rule.id}
-                    className="p-4 bg-[#1B1D21] border border-white/10 rounded-lg hover:border-white/20 transition-colors"
+                    className="p-3 bg-[#1B1D21] border border-white/10 rounded-lg hover:border-white/20 transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start justify-between gap-3">
                       {/* Left side - Rule info */}
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
                         <div className="flex-shrink-0 mt-1">
                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
                             <title>compose-3</title>

@@ -1,0 +1,5 @@
+---
+globs: *.tsx
+alwaysApply: false
+---
+hey do this that and the other

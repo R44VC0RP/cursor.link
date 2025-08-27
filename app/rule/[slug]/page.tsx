@@ -11,6 +11,8 @@ import { countTokens } from "gpt-tokenizer"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { track } from "@vercel/analytics"
+import { AddToListButton } from "@/components/lists/add-to-list-button"
+import { useSession } from "@/lib/auth-client"
 
 interface CursorRule {
   id: string
@@ -73,6 +75,7 @@ function PublicRuleSkeleton() {
 
 export default function PublicRulePage() {
   const params = useParams()
+  const { data: session } = useSession()
   const [rule, setRule] = useState<CursorRule | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -268,6 +271,14 @@ export default function PublicRulePage() {
                 <Copy className="h-3 w-3" />
                 {copied ? "Copied!" : "Copy Text"}
               </Button>
+
+              {/* Add to List button - only show if user is authenticated */}
+              {session?.user && (
+                <AddToListButton
+                  ruleId={rule.id}
+                  ruleTitle={rule.title}
+                />
+              )}
               
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Eye className="h-3 w-3" />

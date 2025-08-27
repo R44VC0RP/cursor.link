@@ -15,6 +15,13 @@
       "when": 1756256422831,
       "tag": "0001_icy_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756302199150,
+      "tag": "0002_big_meteorite",
+      "breakpoints": true
     }
   ]
 }
