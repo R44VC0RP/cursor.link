@@ -22,6 +22,20 @@
       "when": 1756302199150,
       "tag": "0002_big_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756314139196,
+      "tag": "0003_open_flatman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756314716557,
+      "tag": "0004_tan_mentor",
+      "breakpoints": true
     }
   ]
 }
