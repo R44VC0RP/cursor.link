@@ -90,10 +90,10 @@ export function UserAvatar() {
     return (
       <button
         onClick={() => router.push('/login')}
-        className="w-[35px] h-[35px] transition-transform duration-200 hover:scale-105 relative"
+        className="w-[35px] h-[35px] transition-transform duration-200 hover:scale-105 relative flex items-center justify-center"
         title="Sign in"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
+        <svg className="block" xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
           <g clipPath="url(#clip0_572_477)">
             <mask id="mask0_572_477" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="0" y="0" width="35" height="35">
               <path d="M34.5371 0.721191H0.537109V34.7212H34.5371V0.721191Z" fill="white" />
@@ -125,7 +125,7 @@ export function UserAvatar() {
           </defs>
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white font-semibold text-sm">
+          <span className="text-white font-semibold text-sm leading-none">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><title>open-rect-arrow-in</title><g fill="#16171A"><path opacity="0.4" d="M13.25 2H9.75C9.336 2 9 2.336 9 2.75C9 3.164 9.336 3.5 9.75 3.5H13.25C13.939 3.5 14.5 4.061 14.5 4.75V13.25C14.5 13.939 13.939 14.5 13.25 14.5H9.75C9.336 14.5 9 14.836 9 15.25C9 15.664 9.336 16 9.75 16H13.25C14.767 16 16 14.767 16 13.25V4.75C16 3.233 14.767 2 13.25 2Z"></path> <path d="M10.78 8.46999L7.28 4.96999C6.987 4.67699 6.51199 4.67699 6.21899 4.96999C5.92599 5.26299 5.92599 5.73803 6.21899 6.03103L8.439 8.251H2.75C2.336 8.251 2 8.587 2 9.001C2 9.415 2.336 9.751 2.75 9.751H8.439L6.21899 11.971C5.92599 12.264 5.92599 12.739 6.21899 13.032C6.36499 13.178 6.55699 13.252 6.74899 13.252C6.94099 13.252 7.13301 13.179 7.27901 13.032L10.779 9.53201C11.072 9.23901 11.072 8.76397 10.779 8.47097L10.78 8.46999Z"></path></g></svg>
           </span>
         </div>
@@ -140,10 +140,10 @@ export function UserAvatar() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className="w-[35px] h-[35px] transition-transform duration-200 hover:scale-105 relative"
+        className="w-[35px] h-[35px] transition-transform duration-200 hover:scale-105 relative flex items-center justify-center"
         title="Account menu"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
+        <svg className="block" xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
           <g clipPath="url(#clip0_572_477)">
             <mask id="mask0_572_477" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="0" y="0" width="35" height="35">
               <path d="M34.5371 0.721191H0.537109V34.7212H34.5371V0.721191Z" fill="white" />
@@ -175,7 +175,7 @@ export function UserAvatar() {
           </defs>
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white font-semibold text-sm">
+          <span className="text-white font-semibold text-sm leading-none">
             {session.user.email?.charAt(0).toUpperCase()}
           </span>
         </div>

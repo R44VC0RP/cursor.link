@@ -63,8 +63,7 @@ export async function GET(
         createdAt: cursorRule.createdAt,
         updatedAt: cursorRule.updatedAt,
         user: {
-          name: user.name,
-          email: user.email
+          name: user.name
         }
       })
       .from(cursorRule)
