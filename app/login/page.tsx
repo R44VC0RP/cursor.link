@@ -4,6 +4,7 @@ import { MagicLinkForm } from "@/components/auth/magic-link-form"
 import { Header } from "@/components/header"
 import { useSession } from "@/lib/auth-client"
 import { redirect } from "next/navigation"
+import { useState } from "react"
 
 function LoginSkeleton() {
   return (
@@ -51,15 +52,27 @@ function LoginSkeleton() {
 
 export default function LoginPage() {
   const { data: session, isPending } = useSession()
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [sentEmail, setSentEmail] = useState("")
 
   // Show skeleton while loading
   if (isPending) {
     return <LoginSkeleton />
   }
 
-  // Redirect to home if already logged in
-  if (session) {
+  // Redirect to home if already logged in (but not if we just sent a magic link)
+  if (session && !magicLinkSent) {
     return redirect('/')
+  }
+
+  const handleMagicLinkSent = (email: string) => {
+    setMagicLinkSent(true)
+    setSentEmail(email)
+  }
+
+  const handleResetForm = () => {
+    setMagicLinkSent(false)
+    setSentEmail("")
   }
 
   return (
@@ -70,7 +83,12 @@ export default function LoginPage() {
         {/* Centered login form */}
         <div className="flex items-center justify-center mt-16">
           <div className="w-full max-w-md">
-            <MagicLinkForm />
+            <MagicLinkForm 
+              isSuccess={magicLinkSent}
+              sentEmail={sentEmail}
+              onMagicLinkSent={handleMagicLinkSent}
+              onResetForm={handleResetForm}
+            />
           </div>
         </div>
       </main>

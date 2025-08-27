@@ -22,6 +22,16 @@ export const auth = betterAuth({
             from: "Cursor Link <auth@cursor.link>",
             to: email,
             subject: "Sign in to Cursor Link",
+            html: `
+              <p>Welcome to Cursor Link</p>
+              <p>Click the link below to sign in:</p>
+              <a href="${url}">click here to sign in</a><br>
+              <p>This link will expire in 5 minutes.</p>
+              <p>If you didn't request this link, you can safely ignore this email.</p>
+              <p>Thanks,<br>
+              The Cursor Link Team</p>
+              <p>if that above link doesn't work, you can copy and paste this into your browser: ${url}</p>
+            `,
             text: `Welcome to Cursor Link\n\nClick the link below to sign in:\n${url}\n\nThis link will expire in 5 minutes.\n\nIf you didn't request this link, you can safely ignore this email.`,
           })
         } catch (error) {
