@@ -6,10 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { authClient } from "@/lib/auth-client"
 
-export function MagicLinkForm() {
+interface MagicLinkFormProps {
+  isSuccess?: boolean
+  sentEmail?: string
+  onMagicLinkSent?: (email: string) => void
+  onResetForm?: () => void
+}
+
+export function MagicLinkForm({ 
+  isSuccess = false, 
+  sentEmail = "", 
+  onMagicLinkSent, 
+  onResetForm 
+}: MagicLinkFormProps) {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,14 +33,13 @@ export function MagicLinkForm() {
     try {
       const result = await authClient.signIn.magicLink({
         email,
-        callbackURL: "/dashboard", // Redirect to dashboard after successful login
-        newUserCallbackURL: "/dashboard", // Redirect new users to dashboard
+
       })
 
       if (result.error) {
         setError(result.error.message || "Something went wrong")
       } else {
-        setIsSuccess(true)
+        onMagicLinkSent?.(email)
       }
     } catch (err) {
       setError("Failed to send magic link. Please try again.")
@@ -41,11 +51,11 @@ export function MagicLinkForm() {
 
   if (isSuccess) {
     return (
-      <Card className="w-full max-w-md mx-auto p-6 bg-[#1B1D21] border-white/10">
+      <Card className="w-full max-w-md mx-auto p-8 bg-[#1B1D21] border-white/10">
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 bg-green-500/10 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-6 bg-green-500/10 rounded-full flex items-center justify-center ring-4 ring-green-500/20">
             <svg
-              className="w-6 h-6 text-green-500"
+              className="w-8 h-8 text-green-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -58,13 +68,32 @@ export function MagicLinkForm() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Check your email</h2>
-          <p className="text-gray-400 mb-4">
-            We've sent a magic link to <strong>{email}</strong>
+          <h2 className="text-2xl font-bold text-white mb-3">Check your email</h2>
+          <p className="text-gray-300 mb-6 text-base">
+            We've sent a magic link to <br />
+            <strong className="text-white">{sentEmail}</strong>
           </p>
-          <p className="text-sm text-gray-500">
-            Click the link in your email to sign in. The link will expire in 5 minutes.
-          </p>
+          <div className="bg-[#2A2D32] rounded-lg p-4 mb-6">
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Click the link in your email to sign in securely. The link will expire in <strong className="text-white">5 minutes</strong> for your security.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-gray-500">
+              Didn't receive the email? Check your spam folder or try again.
+            </p>
+            <Button
+              onClick={() => {
+                onResetForm?.()
+                setEmail("")
+                setError("")
+              }}
+              variant="secondary"
+              className="w-full"
+            >
+              Send another magic link
+            </Button>
+          </div>
         </div>
       </Card>
     )
