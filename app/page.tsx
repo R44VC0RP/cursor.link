@@ -1,20 +1,108 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useQueryState } from "nuqs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Copy, Download, Share2, ChevronDown } from "lucide-react"
+import { Copy, Download, Share2, ChevronDown, Save } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
+import { Header } from "@/components/header"
+import { useSession } from "@/lib/auth-client"
 
 export default function HomePage() {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
+  const { data: session } = useSession()
+  
+  // URL state - only for persistence
+  const [urlTitle, setUrlTitle] = useQueryState("title", { 
+    defaultValue: "",
+    shallow: true,
+    throttleMs: 500 // Increased throttle for less frequent updates
+  })
+  const [urlContent, setUrlContent] = useQueryState("content", {
+    defaultValue: "",
+    shallow: true,
+    throttleMs: 500 // Increased throttle for less frequent updates
+  })
+  
+  // Local state for immediate updates
+  const [localTitle, setLocalTitle] = useState(urlTitle)
+  const [localContent, setLocalContent] = useState(urlContent)
+  
   const [isShared, setIsShared] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [savedRuleId, setSavedRuleId] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedRule, setSelectedRule] = useState("always")
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const cursorPositionRef = useRef<number>(0)
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync URL state to local state on initial load or URL change
+  useEffect(() => {
+    setLocalTitle(urlTitle)
+  }, [urlTitle])
+
+  useEffect(() => {
+    setLocalContent(urlContent)
+  }, [urlContent])
+
+    // Debounced URL update for title with sanitization
+  const handleTitleChange = useCallback((value: string) => {
+    // Replace spaces with hyphens and filter to only allow letters, numbers, and hyphens
+    const sanitizedValue = value
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-zA-Z0-9-]/g, '') // Remove any characters that aren't letters, numbers, or hyphens
+    
+    setLocalTitle(sanitizedValue)
+    
+    // Clear existing timer
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current)
+    }
+    
+    // Set new timer for URL update
+    updateTimerRef.current = setTimeout(() => {
+      setUrlTitle(sanitizedValue)
+    }, 500)
+  }, [setUrlTitle])
+
+  // Handle content change with local state
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target
+    const value = textarea.value
+    cursorPositionRef.current = textarea.selectionStart
+    setLocalContent(value)
+
+    // Clear existing timer
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current)
+    }
+
+    // Set new timer for URL update
+    updateTimerRef.current = setTimeout(() => {
+      setUrlContent(value)
+    }, 500)
+  }, [setUrlContent])
+
+  // Restore cursor position after content updates
+  useEffect(() => {
+    if (textareaRef.current && document.activeElement === textareaRef.current) {
+      const position = cursorPositionRef.current
+      textareaRef.current.setSelectionRange(position, position)
+    }
+  }, [localContent])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current)
+      }
+    }
+  }, [])
 
   const ruleOptions = [
     {
@@ -60,9 +148,9 @@ export default function HomePage() {
   }, [isDropdownOpen])
 
   useEffect(() => {
-    if (content.trim()) {
+    if (localContent.trim()) {
       try {
-        const tokens = countTokens(content)
+        const tokens = countTokens(localContent)
         setTokenCount(tokens)
       } catch (error) {
         console.error("Error counting tokens:", error)
@@ -71,23 +159,77 @@ export default function HomePage() {
     } else {
       setTokenCount(0)
     }
-  }, [content])
+  }, [localContent])
 
-  const handleShare = () => {
-    setIsShared(true)
-    setTimeout(() => setIsShared(false), 2000)
+  const handleSave = async () => {
+    if (!session || !localTitle.trim() || !localContent.trim()) return
+
+    setIsSaving(true)
+    try {
+      const method = savedRuleId ? 'PUT' : 'POST'
+      const body = {
+        ...(savedRuleId && { id: savedRuleId }),
+        title: localTitle,
+        content: localContent,
+        ruleType: selectedRule,
+        isPublic: false
+      }
+
+      const response = await fetch('/api/cursor-rules', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+
+      if (!response.ok) throw new Error('Failed to save')
+
+      const rule = await response.json()
+      setSavedRuleId(rule.id)
+    } catch (error) {
+      console.error('Error saving rule:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleShare = async () => {
+    if (!session || !savedRuleId) return
+
+    try {
+      // Update rule to be public
+      await fetch('/api/cursor-rules', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: savedRuleId,
+          title: localTitle,
+          content: localContent,
+          ruleType: selectedRule,
+          isPublic: true
+        })
+      })
+
+      // Copy public URL to clipboard
+      const publicUrl = `${window.location.origin}/${session.user.id}/${savedRuleId}`
+      await navigator.clipboard.writeText(publicUrl)
+      
+      setIsShared(true)
+      setTimeout(() => setIsShared(false), 2000)
+    } catch (error) {
+      console.error('Error sharing rule:', error)
+    }
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content)
+    navigator.clipboard.writeText(localContent)
   }
 
   const handleDownload = () => {
-    const blob = new Blob([content], { type: "text/plain" })
+    const blob = new Blob([localContent], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${title || "cursor-rules"}.txt`
+    a.download = `${localTitle || "cursor-rules"}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -99,13 +241,15 @@ export default function HomePage() {
     if (rule) {
       setSelectedRule(ruleId)
 
-      let cleanContent = content
+      let cleanContent = localContent
       const frontmatterRegex = /^---\n[\s\S]*?\n---\n/
-      if (frontmatterRegex.test(content)) {
-        cleanContent = content.replace(frontmatterRegex, "")
+      if (frontmatterRegex.test(localContent)) {
+        cleanContent = localContent.replace(frontmatterRegex, "")
       }
 
-      setContent(rule.frontmatter + cleanContent)
+      const newContent = rule.frontmatter + cleanContent
+      setLocalContent(newContent)
+      setUrlContent(newContent) // Update URL immediately for rule changes
     }
     setIsDropdownOpen(false)
   }
@@ -113,16 +257,17 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
       {/* Main Content */}
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main className="mx-auto max-w-4xl p-6">
+        <Header />
         <div className="space-y-4">
           {/* Title Input with Dropdown */}
           <div className="space-y-3">
             <div className="flex items-end gap-3">
               <Input
                 id="title"
-                placeholder="untitled.cursorrules"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                placeholder="index.mdc"
+                value={localTitle}
+                onChange={(e) => handleTitleChange(e.target.value)}
                 className="h-auto py-0 bg-transparent border-0 border-b border-white/10 text-white placeholder:text-gray-500 focus:border-white/20 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg font-medium rounded-none px-0 flex-1"
               />
 
@@ -141,9 +286,8 @@ export default function HomePage() {
                       <button
                         key={option.id}
                         onClick={() => handleRuleChange(option.id)}
-                        className={`w-full text-left px-3 py-2 hover:bg-[#34373C] transition-colors first:rounded-t-md last:rounded-b-md ${
-                          selectedRule === option.id ? "bg-[#34373C]" : ""
-                        }`}
+                        className={`w-full text-left px-3 py-2 hover:bg-[#34373C] transition-colors first:rounded-t-md last:rounded-b-md ${selectedRule === option.id ? "bg-[#34373C]" : ""
+                          }`}
                       >
                         <div className="font-medium text-white text-xs">{option.label}</div>
                         <div className="text-[10px] text-gray-400 mt-0.5">{option.description}</div>
@@ -165,8 +309,9 @@ export default function HomePage() {
               }}
             >
               <Textarea
+                ref={textareaRef}
                 id="content"
-                placeholder="# Cursor Rules
+                placeholder={`# Cursor Rules
 
 You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
 
@@ -177,26 +322,12 @@ Code Style and Structure
 - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
 - Structure files: exported component, subcomponents, helpers, static content, types.
 
-Naming Conventions
-- Use lowercase with dashes for directories (e.g., components/auth-wizard).
-- Favor named exports for components.
-
-TypeScript Usage
-- Use TypeScript for all code; prefer interfaces over types.
-- Avoid enums; use maps or objects with 'as const' assertion.
-- Use functional components with TypeScript interfaces.
-
-Syntax and Formatting
-- Use the 'function' keyword for pure functions.
-- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
-- Use declarative JSX.
-
 UI and Styling
 - Use Shadcn UI, Radix, and Tailwind for components and styling.
-- Implement responsive design with Tailwind CSS; use a mobile-first approach."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[600px] resize-none border-0 bg-[#1B1D21] text-white placeholder:text-gray-500 focus:ring-0 focus-visible:ring-0 leading-relaxed"
+- Implement responsive design with Tailwind CSS; use a mobile-first approach.`}
+                value={localContent}
+                onChange={handleContentChange}
+                className="min-h-[500px] resize-none border-0 bg-[#1B1D21] text-white placeholder:text-gray-500 focus:ring-0 focus-visible:ring-0 leading-relaxed"
                 style={{ fontSize: "14px" }}
               />
             </Card>
@@ -205,18 +336,29 @@ UI and Styling
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-[0]">
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleShare}
-                disabled={!content.trim()}
-                className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Share2 className="h-3 w-3" />
-                {isShared ? "Shared!" : "Share"}
-              </button>
+              {session && (
+                <button
+                  onClick={savedRuleId ? handleShare : handleSave}
+                  disabled={!localTitle.trim() || !localContent.trim() || isSaving}
+                  className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savedRuleId ? (
+                    <>
+                      <Share2 className="h-3 w-3" />
+                      {isShared ? "Copied!" : "Share"}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3 w-3" />
+                      {isSaving ? "Saving..." : "Save"}
+                    </>
+                  )}
+                </button>
+              )}
 
               <button
                 onClick={handleCopy}
-                disabled={!content.trim()}
+                disabled={!localContent.trim()}
                 className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Copy className="h-3 w-3" />
@@ -225,7 +367,7 @@ UI and Styling
 
               <button
                 onClick={handleDownload}
-                disabled={!content.trim()}
+                disabled={!localContent.trim()}
                 className="group flex min-h-[32px] items-center justify-center gap-1 rounded-[6px] bg-[#70A7D7] px-2 py-1 text-[12px] font-semibold text-[#2A2A2A] outline-none transition-colors duration-200 hover:bg-[#90BAE0] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="h-3 w-3" />
@@ -233,7 +375,7 @@ UI and Styling
               </button>
             </div>
             <div className="text-sm text-gray-500">
-              {content.length} characters • {tokenCount.toLocaleString()} tokens
+              {localContent.length} characters • {tokenCount.toLocaleString()} tokens
             </div>
           </div>
         </div>
