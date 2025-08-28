@@ -65,7 +65,7 @@ function truncateContent(content: string, maxLength: number = 120): string {
 function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -328,7 +328,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <Header />
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
@@ -425,7 +425,7 @@ export default function DashboardPage() {
                     key={rule.id}
                     className="p-3 bg-[#1B1D21] border border-white/10 rounded-lg hover:border-white/20 transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                       {/* Left side - Rule info */}
                       <div className="flex items-start gap-2 flex-1 min-w-0">
                         <div className="flex-shrink-0 mt-1">
@@ -472,9 +472,9 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Right side - Action buttons */}
-                      <div className="flex flex-col gap-2 flex-shrink-0 items-end">
+                      <div className="flex flex-col gap-2 flex-shrink-0 items-start sm:items-end w-full sm:w-auto">
                         {/* First row - Copy buttons for public rules, Make Public button for private rules */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 justify-start sm:justify-end w-full sm:w-auto">
                           {rule.isPublic ? (
                             <Popover>
                               <PopoverTrigger asChild>
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Second row - Edit button */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 justify-start sm:justify-end w-full sm:w-auto">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()

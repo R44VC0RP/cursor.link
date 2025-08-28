@@ -9,7 +9,7 @@ import { useState } from "react"
 function LoginSkeleton() {
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
-      <main className="mx-auto max-w-4xl p-6">
+      <main className="mx-auto max-w-4xl p-4 sm:p-6">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
       {/* Header matching home page */}
-      <main className="mx-auto max-w-4xl p-6">
+      <main className="mx-auto max-w-4xl p-4 sm:p-6">
         <Header />
         {/* Centered login form */}
         <div className="flex items-center justify-center mt-16">

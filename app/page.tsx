@@ -392,7 +392,7 @@ function HomePage() {
     <TooltipProvider>
       <div className="min-h-screen bg-[#16171A] text-white">
         {/* Main Content */}
-        <main className="mx-auto max-w-4xl p-6">
+        <main className="mx-auto max-w-4xl p-4 sm:p-6">
           <Header />
           <div className="space-y-4">
             {/* Title Input with Dropdown */}
@@ -469,8 +469,8 @@ UI and Styling
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-[0]">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 pt-[0]">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Button
                   onClick={handleDownload}
                   disabled={!localContent.trim()}
@@ -577,13 +577,14 @@ UI and Styling
                       size="sm"
                     >
                       <User className="h-3 w-3" />
-                      Sign in (it's free) to save your notes
+                      <span className="hidden sm:inline">Sign in (it's free) to save your notes</span>
+                      <span className="sm:hidden">Sign in to save</span>
                     </Button>
                   </>
                 )}
 
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap justify-start sm:justify-end">
                 {!savedRuleId && (
                   <Button
                     onClick={handleShareAnonLink}
@@ -592,7 +593,8 @@ UI and Styling
                     size="sm"
                   >
                     <Share2 className="h-3 w-3" />
-                    Share anon link
+                    <span className="hidden sm:inline">Share anon link</span>
+                    <span className="sm:hidden">Share</span>
                   </Button>
                 )}
                 {savedRuleId && (
@@ -603,8 +605,8 @@ UI and Styling
                     {isPublic ? "Public" : "Private"}
                   </span>
                 )}
-                <div className="text-sm text-gray-500">
-                  {localContent.length} characters • {tokenCount.toLocaleString()} tokens
+                <div className="text-sm text-gray-500 whitespace-nowrap">
+                  {localContent.length} chars • {tokenCount.toLocaleString()} tokens
                 </div>
               </div>
             </div>
