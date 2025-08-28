@@ -5,7 +5,7 @@ import { useQueryState } from "nuqs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Copy, Download, Share2, ChevronDown, Save, User } from "lucide-react"
+import { Copy, Download, Share2, ChevronDown, Save, User, ChevronUp } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { Header } from "@/components/header"
 import { useSession } from "@/lib/auth-client"
@@ -55,87 +55,13 @@ function HomePage() {
   const [isSignInDialogOpen, setIsSignInDialogOpen] = useState(false)
   const [signInSuccess, setSignInSuccess] = useState(false)
   const [sentEmail, setSentEmail] = useState("")
+  const [showScrollToTop, setShowScrollToTop] = useState(false)
+  const [detectedSlugs, setDetectedSlugs] = useState<string[]>([])
+  const [showSlugsList, setShowSlugsList] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cursorPositionRef = useRef<number>(0)
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Sync URL state to local state on initial load or URL change
-  useEffect(() => {
-    setLocalTitle(urlTitle)
-  }, [urlTitle])
-
-  useEffect(() => {
-    setLocalContent(urlContent)
-  }, [urlContent])
-
-  useEffect(() => {
-    setSelectedRule(urlRuleType || "always")
-  }, [urlRuleType])
-
-  useEffect(() => {
-    setSavedRuleId(urlEditId || null)
-    const isRulePublic = urlIsPublic === "true"
-    setIsPublic(isRulePublic)
-    if (urlEditId && isRulePublic) {
-      setIsShared(true)
-    }
-  }, [urlEditId, urlIsPublic])
-
-  // Debounced URL update for title with sanitization
-  const handleTitleChange = useCallback((value: string) => {
-    // Replace spaces with hyphens and filter to only allow letters, numbers, and hyphens
-    const sanitizedValue = value
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/[^a-zA-Z0-9-]/g, '') // Remove any characters that aren't letters, numbers, or hyphens
-
-    setLocalTitle(sanitizedValue)
-
-    // Clear existing timer
-    if (updateTimerRef.current) {
-      clearTimeout(updateTimerRef.current)
-    }
-
-    // Set new timer for URL update
-    updateTimerRef.current = setTimeout(() => {
-      setUrlTitle(sanitizedValue)
-    }, 500)
-  }, [setUrlTitle])
-
-  // Handle content change with local state
-  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const textarea = e.target
-    const value = textarea.value
-    cursorPositionRef.current = textarea.selectionStart
-    setLocalContent(value)
-
-    // Clear existing timer
-    if (updateTimerRef.current) {
-      clearTimeout(updateTimerRef.current)
-    }
-
-    // Set new timer for URL update
-    updateTimerRef.current = setTimeout(() => {
-      setUrlContent(value)
-    }, 500)
-  }, [setUrlContent])
-
-  // Restore cursor position after content updates
-  useEffect(() => {
-    if (textareaRef.current && document.activeElement === textareaRef.current) {
-      const position = cursorPositionRef.current
-      textareaRef.current.setSelectionRange(position, position)
-    }
-  }, [localContent])
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (updateTimerRef.current) {
-        clearTimeout(updateTimerRef.current)
-      }
-    }
-  }, [])
 
   const ruleOptions = [
     {
@@ -164,6 +90,113 @@ function HomePage() {
     },
   ]
 
+  // Sync URL state to local state on initial load or URL change
+  useEffect(() => {
+    setLocalTitle(urlTitle)
+  }, [urlTitle])
+
+  useEffect(() => {
+    setLocalContent(urlContent)
+  }, [urlContent])
+
+  useEffect(() => {
+    setSelectedRule(urlRuleType || "always")
+  }, [urlRuleType])
+
+  useEffect(() => {
+    setSavedRuleId(urlEditId || null)
+    const isRulePublic = urlIsPublic === "true"
+    setIsPublic(isRulePublic)
+    if (urlEditId && isRulePublic) {
+      setIsShared(true)
+    }
+  }, [urlEditId, urlIsPublic])
+
+  // Debounced URL update for title with sanitization
+  const handleTitleChange = useCallback((value: string) => {
+    // More restrictive sanitization - only allow letters, numbers, hyphens, and dots
+    const sanitizedValue = value
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-zA-Z0-9.-]/g, '') // Remove any characters that aren't letters, numbers, hyphens, or dots
+      .replace(/\.{2,}/g, '.') // Replace multiple dots with single dot
+      .replace(/-{2,}/g, '-') // Replace multiple hyphens with single hyphen
+
+    setLocalTitle(sanitizedValue)
+
+    // Clear existing timer
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current)
+    }
+
+    // Set new timer for URL update
+    updateTimerRef.current = setTimeout(() => {
+      setUrlTitle(sanitizedValue)
+    }, 500)
+  }, [setUrlTitle])
+
+  // Handle content change with local state
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target
+    const value = textarea.value
+    cursorPositionRef.current = textarea.selectionStart
+    setLocalContent(value)
+
+    // Detect if this looks like a large cursor rule and auto-set to manual if needed
+    if (value.length > 2000 && selectedRule === 'always') {
+      // Extract potential slugs from the content
+      const slugMatches = value.match(/@[a-zA-Z0-9-_]+/g) || []
+      const uniqueSlugs = Array.from(new Set(slugMatches)).slice(0, 10) // Limit to 10 slugs
+      
+      if (slugMatches.length > 3) {
+        setDetectedSlugs(uniqueSlugs)
+        setShowSlugsList(true)
+        setSelectedRule('manual')
+        const rule = ruleOptions.find((r) => r.id === 'manual')
+        if (rule) {
+          let cleanContent = value
+          const frontmatterRegex = /^---\n[\s\S]*?\n---\n/
+          if (frontmatterRegex.test(value)) {
+            cleanContent = value.replace(frontmatterRegex, "")
+          }
+          const newContent = rule.frontmatter + cleanContent
+          setLocalContent(newContent)
+          toast.info("Large rule detected! Set to 'Apply Manually' and found @-mentions", {
+            description: `Found ${uniqueSlugs.length} potential slugs`
+          })
+        }
+      }
+    }
+
+    // Clear existing timer
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current)
+    }
+
+    // Set new timer for URL update
+    updateTimerRef.current = setTimeout(() => {
+      setUrlContent(value)
+    }, 500)
+  }, [setUrlContent, selectedRule, ruleOptions])
+
+  // Restore cursor position after content updates
+  useEffect(() => {
+    if (textareaRef.current && document.activeElement === textareaRef.current) {
+      const position = cursorPositionRef.current
+      textareaRef.current.setSelectionRange(position, position)
+    }
+  }, [localContent])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current)
+      }
+    }
+  }, [])
+
+
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -179,6 +212,24 @@ function HomePage() {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [isDropdownOpen])
+
+  // Handle scroll detection for scroll-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollToTop(window.scrollY > 300)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+    track('Scroll to Top Clicked')
+  }
 
   useEffect(() => {
     if (localContent.trim()) {
@@ -391,6 +442,16 @@ function HomePage() {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-[#16171A] text-white">
+        {/* Scroll to Top Button */}
+        {showScrollToTop && (
+          <button
+            onClick={scrollToTop}
+            className="fixed left-4 bottom-4 z-50 p-2 sm:p-3 bg-neutral-300/20 dark:bg-neutral-400/20 text-neutral-600 dark:text-neutral-300 backdrop-blur-[1px] border border-neutral-400/20 rounded-full shadow-lg"
+          >
+            <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
+        )}
+
         {/* Main Content */}
         <main className="mx-auto max-w-4xl p-4 sm:p-6">
           <Header />
@@ -468,150 +529,187 @@ UI and Styling
               </Card>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 pt-[0]">
-              <div className="flex items-center gap-3 flex-wrap">
-                <Button
-                  onClick={handleDownload}
-                  disabled={!localContent.trim()}
-                  variant="primary"
-                  size="sm"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-                {isPending ? (
-                  // Loading state - show skeleton button
-                  <div className="h-8 w-48 bg-gray-700/50 animate-pulse rounded-lg hidden" />
-                ) : session ? (
-                  <>
-
-                    {!savedRuleId ? (
-                      <Button
-                        onClick={handleSave}
-                        disabled={!localTitle.trim() || !localContent.trim() || isSaving}
-                        variant="primary"
-                        size="sm"
-                        className="w-16"
-                      >
-                        <Save className="h-3 w-3" />
-                        {isSaving ? "..." : "Save"}
-                      </Button>
-                    ) : !isPublic ? (
-                      <Button
-                        onClick={handleShare}
-                        disabled={!localTitle.trim() || !localContent.trim()}
-                        variant="primary"
-                        size="sm"
-                        className="w-16"
-                      >
-                        <Share2 className="h-3 w-3" />
-                        Share
-                      </Button>
-                    ) : null}
-
-                    {savedRuleId && (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={isPublic ? handleCopyCLI : undefined}
-                              disabled={!isPublic}
-                              variant="primary"
-                              size="sm"
-                              className={!isPublic ? "bg-gray-600 text-gray-400 cursor-not-allowed opacity-50 hover:bg-gray-600" : ""}
-                            >
-                              <Copy className="h-3 w-3" />
-                              Copy CLI
-                            </Button>
-                          </TooltipTrigger>
-                          {!isPublic && (
-                            <TooltipContent>
-                              <p>Share first</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={isPublic ? handleCopyViewURL : undefined}
-                              disabled={!isPublic}
-                              variant="primary"
-                              size="sm"
-                              className={!isPublic ? "bg-gray-600 text-gray-400 cursor-not-allowed opacity-50 hover:bg-gray-600" : ""}
-                            >
-                              <Share2 className="h-3 w-3" />
-                              Copy View URL
-                            </Button>
-                          </TooltipTrigger>
-                          {!isPublic && (
-                            <TooltipContent>
-                              <p>Share first</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-
-                        <Button
-                          onClick={handleClone}
-                          variant="secondary"
-                          size="sm"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                            <title>split-3</title>
-                            <g fill="#70A7D7">
-                              <path opacity="0.4" d="M15.942 2.46301C15.866 2.28001 15.72 2.13401 15.537 2.05701C15.445 2.01901 15.348 1.99902 15.25 1.99902H11C10.586 1.99902 10.25 2.33502 10.25 2.74902C10.25 3.16302 10.586 3.49902 11 3.49902H13.439L10.219 6.71899C9.92599 7.01199 9.92599 7.48703 10.219 7.78003C10.365 7.92603 10.557 8 10.749 8C10.941 8 11.133 7.92703 11.279 7.78003L14.499 4.56006V6.99902C14.499 7.41302 14.835 7.74902 15.249 7.74902C15.663 7.74902 15.999 7.41302 15.999 6.99902V2.75C15.999 2.652 15.98 2.55501 15.942 2.46301Z"></path>
-                              <path d="M4.561 3.5H7C7.414 3.5 7.75 3.164 7.75 2.75C7.75 2.336 7.414 2 7 2H2.75C2.336 2 2 2.336 2 2.75V7C2 7.414 2.336 7.75 2.75 7.75C3.164 7.75 3.5 7.414 3.5 7V4.56104L7.884 8.94495C8.12 9.18095 8.25 9.49498 8.25 9.82898V16.25C8.25 16.664 8.586 17 9 17C9.414 17 9.75 16.664 9.75 16.25V9.82898C9.75 9.09398 9.464 8.40403 8.944 7.88403L4.561 3.5Z"></path>
-                            </g>
-                          </svg>
-                          Fork
-                        </Button>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      onClick={() => window.location.href = '/login'}
-                      variant="primary"
-                      size="sm"
-                    >
-                      <User className="h-3 w-3" />
-                      <span className="hidden sm:inline">Sign in (it's free) to save your notes</span>
-                      <span className="sm:hidden">Sign in to save</span>
-                    </Button>
-                  </>
-                )}
-
-              </div>
-              <div className="flex items-center gap-3 flex-wrap justify-start sm:justify-end">
-                {!savedRuleId && (
-                  <Button
-                    onClick={handleShareAnonLink}
-                    disabled={!localContent.trim()}
-                    variant="secondary"
-                    size="sm"
+            {/* Smart Slugs List */}
+            {showSlugsList && detectedSlugs.length > 0 && (
+              <Card className="border-0 bg-[#1B1D21] p-4" style={{
+                border: "1px solid rgba(255, 255, 255, 0.04)",
+              }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-white">Detected @-mentions</h3>
+                  <button 
+                    onClick={() => setShowSlugsList(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
                   >
-                    <Share2 className="h-3 w-3" />
-                    <span className="hidden sm:inline">Share anon link</span>
-                    <span className="sm:hidden">Share</span>
-                  </Button>
-                )}
-                {savedRuleId && (
-                  <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${isPublic
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-gray-500/10 text-gray-400"
-                    }`}>
-                    {isPublic ? "Public" : "Private"}
-                  </span>
-                )}
-                <div className="text-sm text-gray-500 whitespace-nowrap">
-                  {localContent.length} chars • {tokenCount.toLocaleString()} tokens
+                    ×
+                  </button>
                 </div>
-              </div>
-            </div>
+                <div className="flex flex-wrap gap-2">
+                  {detectedSlugs.map((slug, index) => (
+                    <span 
+                      key={index}
+                      className="px-2 py-1 bg-neutral-300/10 text-neutral-300 text-xs rounded border border-neutral-400/20 font-mono"
+                    >
+                      {slug}
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Spacer for floating action bar */}
+            <div className="h-20"></div>
           </div>
         </main>
+
+        {/* Glassmorphic Floating Action Bar */}
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 max-w-[calc(100vw-2rem)]">
+          <div className="bg-neutral-300/20 dark:bg-neutral-400/20 text-neutral-600 dark:text-neutral-300 backdrop-blur-[1px] border border-neutral-400/20 rounded-xl p-2 sm:p-3 shadow-2xl overflow-x-auto">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-max">
+              {/* Primary Actions */}
+              <Button
+                onClick={handleDownload}
+                disabled={!localContent.trim()}
+                variant="primary"
+                size="sm"
+                className="hover:bg-[#70A7D7] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+              >
+                <Download className="h-3 w-3" />
+                <span className="hidden md:inline ml-1">Download</span>
+              </Button>
+              
+              {isPending ? (
+                <div className="h-8 w-8 sm:w-12 bg-gray-700/50 animate-pulse rounded-lg" />
+              ) : session ? (
+                <>
+                  {!savedRuleId ? (
+                    <Button
+                      onClick={handleSave}
+                      disabled={!localTitle.trim() || !localContent.trim() || isSaving}
+                      variant="primary"
+                      size="sm"
+                      className="hover:bg-[#90BAE0] min-w-[32px] sm:min-w-[64px] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                    >
+                      <Save className="h-3 w-3" />
+                      <span className="hidden md:inline ml-1">{isSaving ? "..." : "Save"}</span>
+                    </Button>
+                  ) : !isPublic ? (
+                    <Button
+                      onClick={handleShare}
+                      disabled={!localTitle.trim() || !localContent.trim()}
+                      variant="primary"
+                      size="sm"
+                      className="hover:bg-[#90BAE0] min-w-[32px] sm:min-w-[64px] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                    >
+                      <Share2 className="h-3 w-3" />
+                      <span className="hidden md:inline ml-1">Share</span>
+                    </Button>
+                  ) : null}
+
+                  {savedRuleId && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={isPublic ? handleCopyCLI : undefined}
+                            disabled={!isPublic}
+                            variant="primary"
+                            size="sm"
+                            className={`hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto ${!isPublic ? "opacity-50" : ""}`}
+                          >
+                            <Copy className="h-3 w-3" />
+                            <span className="hidden md:inline ml-1">CLI</span>
+                          </Button>
+                        </TooltipTrigger>
+                        {!isPublic && (
+                          <TooltipContent>
+                            <p>Share first</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={isPublic ? handleCopyViewURL : undefined}
+                            disabled={!isPublic}
+                            variant="primary"
+                            size="sm"
+                            className={`hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto ${!isPublic ? "opacity-50" : ""}`}
+                          >
+                            <Share2 className="h-3 w-3" />
+                            <span className="hidden md:inline ml-1">URL</span>
+                          </Button>
+                        </TooltipTrigger>
+                        {!isPublic && (
+                          <TooltipContent>
+                            <p>Share first</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+
+                      <Button
+                        onClick={handleClone}
+                        variant="secondary"
+                        size="sm"
+                        className="bg-transparent border-neutral-400/30 text-neutral-300 hover:text-neutral-300 hover:bg-transparent hover:border-neutral-400/30 px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 18 18">
+                          <g fill="currentColor">
+                            <path opacity="0.4" d="M15.942 2.46301C15.866 2.28001 15.72 2.13401 15.537 2.05701C15.445 2.01901 15.348 1.99902 15.25 1.99902H11C10.586 1.99902 10.25 2.33502 10.25 2.74902C10.25 3.16302 10.586 3.49902 11 3.49902H13.439L10.219 6.71899C9.92599 7.01199 9.92599 7.48703 10.219 7.78003C10.365 7.92603 10.557 8 10.749 8C10.941 8 11.133 7.92703 11.279 7.78003L14.499 4.56006V6.99902C14.499 7.41302 14.835 7.74902 15.249 7.74902C15.663 7.74902 15.999 7.41302 15.999 6.99902V2.75C15.999 2.652 15.98 2.55501 15.942 2.46301Z"></path>
+                            <path d="M4.561 3.5H7C7.414 3.5 7.75 3.164 7.75 2.75C7.75 2.336 7.414 2 7 2H2.75C2.336 2 2 2.336 2 2.75V7C2 7.414 2.336 7.75 2.75 7.75C3.164 7.75 3.5 7.414 3.5 7V4.56104L7.884 8.94495C8.12 9.18095 8.25 9.49498 8.25 9.82898V16.25C8.25 16.664 8.586 17 9 17C9.414 17 9.75 16.664 9.75 16.25V9.82898C9.75 9.09398 9.464 8.40403 8.944 7.88403L4.561 3.5Z"></path>
+                          </g>
+                        </svg>
+                        <span className="hidden md:inline ml-1">Fork</span>
+                      </Button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <Button
+                  onClick={() => window.location.href = '/login'}
+                  variant="primary"
+                  size="sm"
+                  className="hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                >
+                  <User className="h-3 w-3" />
+                  <span className="hidden lg:inline ml-1">Sign in to save</span>
+                  <span className="hidden md:inline lg:hidden ml-1">Sign in</span>
+                </Button>
+              )}
+
+              {/* Secondary Actions */}
+              <div className="h-4 sm:h-6 w-px bg-neutral-400/30 mx-1"></div>
+              
+              {!savedRuleId && (
+                <Button
+                  onClick={handleShareAnonLink}
+                  disabled={!localContent.trim()}
+                  variant="secondary"
+                  size="sm"
+                  className="bg-transparent border-neutral-400/30 text-neutral-300 hover:text-neutral-300 hover:bg-transparent hover:border-neutral-400/30 px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                >
+                  <Share2 className="h-3 w-3" />
+                  <span className="hidden md:inline ml-1">Share</span>
+                </Button>
+              )}
+              
+              <div className="text-xs text-neutral-400 pl-1 sm:pl-2 flex-shrink-0">
+                <div className="hidden sm:block">{localContent.length} chars</div>
+                <div className="hidden sm:block">{tokenCount.toLocaleString()} tokens</div>
+                <div className="sm:hidden">{Math.round(localContent.length/1000)}k</div>
+              </div>
+              
+              {savedRuleId && (
+                <span className={`px-1 sm:px-2 py-1 text-xs rounded-full flex-shrink-0 ${
+                  isPublic ? "bg-green-500/20 text-green-400" : "bg-neutral-500/20 text-neutral-400"
+                }`}>
+                  <span className="hidden sm:inline">{isPublic ? "Public" : "Private"}</span>
+                  <span className="sm:hidden">{isPublic ? "Pub" : "Pri"}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </TooltipProvider>
   )
