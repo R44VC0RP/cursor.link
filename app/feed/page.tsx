@@ -195,7 +195,7 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
-      <main className="mx-auto max-w-4xl p-6">
+      <main className="mx-auto max-w-4xl p-4 sm:p-6">
         <Header />
         
         <div className="space-y-6">
@@ -270,7 +270,7 @@ export default function FeedPage() {
               ) : (
                 currentRules.map((rule, index) => (
                   <Card key={rule.id} className="p-4 bg-[#1B1D21] border border-white/10 hover:border-white/20 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                       {/* Left side - Rule info */}
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         <div className="flex-shrink-0 mt-1">
@@ -302,7 +302,7 @@ export default function FeedPage() {
                       </div>
 
                       {/* Right side - Action buttons */}
-                      <div className="flex flex-col gap-2 flex-shrink-0 items-end">
+                      <div className="flex flex-col gap-2 flex-shrink-0 items-start sm:items-end w-full sm:w-auto">
                         {/* First row - Copy button with popover */}
                         <div className="flex items-center gap-2">
                           <Popover>
@@ -371,7 +371,7 @@ export default function FeedPage() {
                         </div>
 
                         {/* Second row - Download and Add to List */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 justify-start sm:justify-end w-full sm:w-auto">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()

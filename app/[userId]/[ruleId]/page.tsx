@@ -28,7 +28,7 @@ interface CursorRule {
 function PublicRuleSkeleton() {
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
-      <main className="mx-auto max-w-4xl p-6">
+      <main className="mx-auto max-w-4xl p-4 sm:p-6">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export default function PublicRulePage() {
   if (error) {
     return (
       <div className="min-h-screen bg-[#16171A] text-white">
-        <main className="mx-auto max-w-4xl p-6">
+        <main className="mx-auto max-w-4xl p-4 sm:p-6">
           <Header />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-4">Rule Not Found</h1>
@@ -166,7 +166,7 @@ export default function PublicRulePage() {
 
   return (
     <div className="min-h-screen bg-[#16171A] text-white">
-      <main className="mx-auto max-w-4xl p-6">
+      <main className="mx-auto max-w-4xl p-4 sm:p-6">
         <Header />
         
         <div className="space-y-4">
@@ -236,8 +236,8 @@ export default function PublicRulePage() {
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-[0]">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 pt-[0]">
+            <div className="flex items-center gap-3 flex-wrap">
               <Button
                 onClick={handleInstallCopy}
                 variant="primary"
@@ -270,8 +270,8 @@ export default function PublicRulePage() {
                 {rule.views.toLocaleString()} views
               </div>
             </div>
-            <div className="text-sm text-gray-500">
-              {rule.content.length} characters • {tokenCount.toLocaleString()} tokens
+            <div className="text-sm text-gray-500 whitespace-nowrap order-first sm:order-last">
+              {rule.content.length} chars • {tokenCount.toLocaleString()} tokens
             </div>
           </div>
         </div>
