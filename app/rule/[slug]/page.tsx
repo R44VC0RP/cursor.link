@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Copy, Eye, Download, Terminal, Check } from "lucide-react"
+import { Copy, Eye, Download, Terminal, Check, Share2 } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -82,6 +82,8 @@ export default function PublicRulePage() {
   const [tokenCount, setTokenCount] = useState(0)
   const [copied, setCopied] = useState(false)
   const [cliCopied, setCliCopied] = useState(false)
+  const [urlCopied, setUrlCopied] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const fetchRule = async () => {
@@ -140,8 +142,6 @@ export default function PublicRulePage() {
     toast.success("Install command copied to clipboard!")
   }
 
-
-
   const handleDownload = () => {
     if (!rule) return
     
@@ -156,6 +156,45 @@ export default function PublicRulePage() {
     URL.revokeObjectURL(url)
     track("Public Rule Downloaded", { ruleId: rule.id })
   }
+
+  const handleCopyViewURL = async () => {
+    if (!rule) return
+    
+    const viewURL = window.location.href
+    await navigator.clipboard.writeText(viewURL)
+    setUrlCopied(true)
+    track("Public Rule View URL Copied", { ruleId: rule.id })
+    setTimeout(() => setUrlCopied(false), 2000)
+    toast.success("View URL copied to clipboard!")
+  }
+
+  const handleCopyCLI = async () => {
+    if (!rule) return
+    
+    const installCommand = `npx shadcn add ${window.location.origin}/api/registry/${rule.id}`
+    await navigator.clipboard.writeText(installCommand)
+    setCliCopied(true)
+    track("CLI Command Copied", { ruleId: rule.id })
+    setTimeout(() => setCliCopied(false), 2000)
+    toast.success("Install command copied to clipboard!")
+  }
+
+  // Auto-resize textarea on mobile
+  useEffect(() => {
+    const adjustTextareaHeight = () => {
+      if (textareaRef.current && window.innerWidth < 768) {
+        textareaRef.current.style.height = 'auto'
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+      }
+    }
+
+    if (rule?.content) {
+      setTimeout(adjustTextareaHeight, 100)
+    }
+
+    window.addEventListener('resize', adjustTextareaHeight)
+    return () => window.removeEventListener('resize', adjustTextareaHeight)
+  }, [rule?.content])
 
   if (loading) {
     return <PublicRuleSkeleton />
@@ -207,17 +246,18 @@ export default function PublicRulePage() {
               }}
             >
               <Textarea
+                ref={textareaRef}
                 value={rule.content}
                 readOnly
-                className="min-h-[500px] resize-none border-0 bg-[#1B1D21] text-white leading-relaxed"
+                className="min-h-[500px] md:min-h-[500px] resize-none border-0 bg-[#1B1D21] text-white leading-relaxed"
                 style={{ fontSize: "14px" }}
               />
             </Card>
           </div>
 
-          {/* Installation Instructions */}
+          {/* Installation Instructions - Hidden on mobile */}
           <Card
-            className="border-0 bg-[#1B1D21] p-4"
+            className="hidden md:block border-0 bg-[#1B1D21] p-4"
             style={{
               border: "1px solid rgba(255, 255, 255, 0.04)",
               boxShadow: "rgba(0, 0, 0, 0.06) 0px 18px 25.8px 0px",
@@ -258,53 +298,84 @@ export default function PublicRulePage() {
             </div>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 pt-[0]">
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button
-                onClick={handleDownload}
-                variant="secondary"
-                size="sm"
-              >
-                <Download className="h-3 w-3" />
-                Download
-              </Button>
-              
-              <Button
-                onClick={handleCopy}
-                variant="secondary"
-                size="sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                  <title>duplicate</title>
-                  <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" stroke="#70A7D7">
-                    <path opacity="0.3" d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z" fill="#70A7D7" data-stroke="none" stroke="none"></path>
-                    <path d="M13.75 5.25H7.25C6.145 5.25 5.25 6.145 5.25 7.25V13.75C5.25 14.855 6.145 15.75 7.25 15.75H13.75C14.855 15.75 15.75 14.855 15.75 13.75V7.25C15.75 6.145 14.855 5.25 13.75 5.25Z"></path>
-                    <path d="M12.4012 2.74998C12.0022 2.06148 11.2151 1.64837 10.38 1.77287L3.45602 2.80199C2.36402 2.96389 1.61003 3.98099 1.77203 5.07399L2.75002 11.6548"></path>
-                  </g>
-                </svg>
-                {copied ? "Copied!" : "Copy Rule"}
-              </Button>
+          {/* Spacer for floating action bar */}
+          <div className="h-20"></div>
+        </div>
+      </main>
 
-              {/* Add to List button - only show if user is authenticated */}
-              {session?.user && (
+      {/* Glassmorphic Floating Action Bar */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 max-w-[calc(100vw-2rem)]">
+        <div className="bg-neutral-300/20 dark:bg-neutral-400/20 text-neutral-600 dark:text-neutral-300 backdrop-blur-[1px] border border-neutral-400/20 rounded-xl p-2 sm:p-3 shadow-2xl overflow-x-auto">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-max">
+            {/* Primary Actions */}
+            <Button
+              onClick={handleDownload}
+              variant="primary"
+              size="sm"
+              className="hover:bg-[#70A7D7] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+            >
+              <Download className="h-3 w-3" />
+              <span className="hidden md:inline ml-1">Download</span>
+            </Button>
+            
+            <Button
+              onClick={handleCopy}
+              variant="primary"
+              size="sm"
+              className="hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+            >
+              <Copy className="h-3 w-3" />
+              <span className="hidden md:inline ml-1">{copied ? "Copied!" : "Copy Rule"}</span>
+            </Button>
+
+            <Button
+              onClick={handleCopyCLI}
+              variant="primary"
+              size="sm"
+              className="hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto hidden md:flex"
+            >
+              <Terminal className="h-3 w-3" />
+              <span className="hidden md:inline ml-1">{cliCopied ? "Copied!" : "CLI"}</span>
+            </Button>
+
+            <Button
+              onClick={handleCopyViewURL}
+              variant="primary"
+              size="sm"
+              className="hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+            >
+              <Share2 className="h-3 w-3" />
+              <span className="hidden md:inline ml-1">{urlCopied ? "Copied!" : "URL"}</span>
+            </Button>
+
+            {/* Add to List button - only show if user is authenticated */}
+            {session?.user && (
+              <>
+                <div className="h-4 sm:h-6 w-px bg-neutral-400/30 mx-1"></div>
                 <AddToListButton
                   ruleId={rule.id}
                   ruleTitle={rule.title}
                 />
-              )}
-              
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Eye className="h-3 w-3" />
-                {rule.views.toLocaleString()} views
-              </div>
+              </>
+            )}
+            
+            {/* Secondary Info */}
+            <div className="h-4 sm:h-6 w-px bg-neutral-400/30 mx-1"></div>
+            
+            <div className="flex items-center gap-1 text-xs text-neutral-400">
+              <Eye className="h-3 w-3" />
+              <span className="hidden sm:inline">{rule.views.toLocaleString()} views</span>
+              <span className="sm:hidden">{rule.views.toLocaleString()}</span>
             </div>
-            <div className="text-sm text-gray-500 whitespace-nowrap order-first sm:order-last">
-              {rule.content.length} chars • {tokenCount.toLocaleString()} tokens
+            
+            <div className="text-xs text-neutral-400 pl-1 sm:pl-2 flex-shrink-0">
+              <div className="hidden sm:block">{rule.content.length} chars</div>
+              <div className="hidden sm:block">{tokenCount.toLocaleString()} tokens</div>
+              <div className="sm:hidden">{Math.round(rule.content.length/1000)}k</div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
