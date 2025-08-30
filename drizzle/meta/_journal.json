@@ -36,6 +36,20 @@
       "when": 1756314716557,
       "tag": "0004_tan_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756574516310,
+      "tag": "0005_mighty_valeria_richards",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1756576683502,
+      "tag": "0006_clumsy_phantom_reporter",
+      "breakpoints": true
     }
   ]
 }

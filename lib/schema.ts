@@ -72,3 +72,33 @@ export const listRule = pgTable("list_rule", {
   ruleId: text("ruleId").notNull().references(() => cursorRule.id, { onDelete: "cascade" }),
   createdAt: timestamp("createdAt").notNull(),
 })
+
+export const rating = pgTable("rating", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+  ruleId: text("ruleId").notNull().references(() => cursorRule.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1-5 stars
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
+export const comment = pgTable("comment", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+  ruleId: text("ruleId").notNull().references(() => cursorRule.id, { onDelete: "cascade" }),
+  parentId: text("parentId").references(() => comment.id, { onDelete: "cascade" }), // For replies
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
+export const report = pgTable("report", {
+  id: text("id").primaryKey(),
+  reporterId: text("reporterId").notNull().references(() => user.id, { onDelete: "cascade" }),
+  commentId: text("commentId").references(() => comment.id, { onDelete: "cascade" }),
+  ruleId: text("ruleId").references(() => cursorRule.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(), // spam, inappropriate, harassment, etc.
+  description: text("description"),
+  status: text("status").notNull().default("pending"), // pending, reviewed, resolved
+  createdAt: timestamp("createdAt").notNull(),
+})

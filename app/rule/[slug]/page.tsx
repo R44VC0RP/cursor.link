@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { track } from "@vercel/analytics"
 import { AddToListButton } from "@/components/lists/add-to-list-button"
 import { useSession } from "@/lib/auth-client"
+import { DiscussionSection } from "@/components/discussion/discussion-section"
 
 interface CursorRule {
   id: string
@@ -303,6 +304,9 @@ export default function PublicRulePage() {
               {rule.content.length} chars • {tokenCount.toLocaleString()} tokens
             </div>
           </div>
+
+          {/* Discussion and Rating Section */}
+          <DiscussionSection ruleId={rule.id} />
         </div>
       </main>
     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
-import { Eye, Clock } from "lucide-react"
+import { Eye, Clock, Star, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
 import { track } from "@vercel/analytics"
 import { AddToListButton } from "@/components/lists/add-to-list-button"
@@ -114,6 +114,11 @@ export default function FeedPage() {
   const [newRules, setNewRules] = useState<CursorRule[]>([])
   const [loading, setLoading] = useState(true)
   const [actionStates, setActionStates] = useState<{[key: string]: boolean}>({})
+  const [ruleStats, setRuleStats] = useState<Record<string, {
+    averageRating: number
+    totalRatings: number
+    totalComments: number
+  }>>({})
 
   // Helper function to show checkmark feedback
   const showActionFeedback = (actionKey: string) => {
@@ -142,14 +147,27 @@ export default function FeedPage() {
           fetch('/api/feed/new')
         ])
 
+        let allRules: CursorRule[] = []
         if (hotResponse.ok) {
           const hotData = await hotResponse.json()
           setHotRules(hotData)
+          allRules = [...allRules, ...hotData]
         }
 
         if (newResponse.ok) {
           const newData = await newResponse.json()
           setNewRules(newData)
+          allRules = [...allRules, ...newData]
+        }
+
+        // Fetch stats for all rules
+        if (allRules.length > 0) {
+          const ruleIds = Array.from(new Set(allRules.map(rule => rule.id)))
+          const statsResponse = await fetch(`/api/feed/stats?ruleIds=${ruleIds.join(',')}`)
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json()
+            setRuleStats(statsData)
+          }
         }
       } catch (error) {
         console.error('Error fetching feed rules:', error)
@@ -288,13 +306,26 @@ export default function FeedPage() {
                             <p className="text-xs text-gray-400 mb-1 line-clamp-2 group-hover:text-gray-300 transition-colors">
                               {firstLine(rule.content)}
                             </p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500 group-hover:text-gray-400 transition-colors">
+                            <div className="flex items-center gap-4 text-xs text-gray-500 group-hover:text-gray-400 transition-colors flex-wrap">
                               <span>by {rule.user?.name || 'Anonymous'}</span>
                               <span>{formatRelativeTime(rule.createdAt)}</span>
                               <div className="flex items-center gap-1">
                                 <Eye className="h-3 w-3" />
                                 {rule.views.toLocaleString()} views
                               </div>
+                              {ruleStats[rule.id]?.totalRatings > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  <span>{ruleStats[rule.id].averageRating.toFixed(1)}</span>
+                                  <span>({ruleStats[rule.id].totalRatings})</span>
+                                </div>
+                              )}
+                              {ruleStats[rule.id]?.totalComments > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <MessageSquare className="h-3 w-3" />
+                                  <span>{ruleStats[rule.id].totalComments}</span>
+                                </div>
+                              )}
                               <span className="capitalize text-gray-600">{rule.ruleType}</span>
                             </div>
                           </Link>
