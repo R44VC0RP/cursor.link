@@ -10,6 +10,7 @@ import { env } from "./env"
 const inbound = new Inbound(env.INBOUND_API_KEY)
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://cursor.link",
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
@@ -27,6 +28,14 @@ export const auth = betterAuth({
       // Optional configuration
       expiresIn: "30m", // Device code expiration time
       interval: "5s",    // Minimum polling interval
+      // Allow any client ID for now (can add validation later)
+      validateClient: async (clientId) => {
+        console.log('Device auth request for client:', clientId);
+        return true; // Accept all clients for now
+      },
+      onDeviceAuthRequest: async (clientId, scope) => {
+        console.log('Device authorization request:', { clientId, scope });
+      },
     }), 
     magicLink({
       sendMagicLink: async ({ email, token, url }) => {

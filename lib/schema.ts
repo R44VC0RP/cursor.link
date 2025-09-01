@@ -72,3 +72,19 @@ export const listRule = pgTable("list_rule", {
   ruleId: text("ruleId").notNull().references(() => cursorRule.id, { onDelete: "cascade" }),
   createdAt: timestamp("createdAt").notNull(),
 })
+
+// Device authorization table for better-auth device flow
+export const deviceCode = pgTable("deviceCode", {
+  id: text("id").primaryKey(),
+  deviceCode: text("deviceCode").notNull(),
+  userCode: text("userCode").notNull(),
+  userId: text("userId").references(() => user.id, { onDelete: "cascade" }),
+  clientId: text("clientId"),
+  scope: text("scope"),
+  status: text("status").notNull().default("pending"), // pending, approved, denied
+  expiresAt: timestamp("expiresAt").notNull(),
+  lastPolledAt: timestamp("lastPolledAt"),
+  pollingInterval: integer("pollingInterval"),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+})

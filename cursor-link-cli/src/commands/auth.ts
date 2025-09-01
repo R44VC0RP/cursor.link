@@ -33,7 +33,7 @@ async function handleLogin() {
     if (token?.user) {
       console.log(chalk.gray(`   User: ${token.user.name} (${token.user.email})`));
     }
-    console.log(chalk.gray('   Use "cursor-link auth logout" to sign out first if you want to switch accounts.'));
+    console.log(chalk.gray('   Use "cursor-link logout" to sign out first if you want to switch accounts.'));
     return;
   }
 

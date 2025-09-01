@@ -19,7 +19,7 @@ export async function pushCommand(options: PushOptions) {
     // Check authentication
     if (!(await authManager.isAuthenticated())) {
       console.log(chalk.red('❌ Not authenticated'));
-      console.log(chalk.gray('Run: cursor-link auth login'));
+      console.log(chalk.gray('Run: cursor-link login'));
       process.exit(1);
     }
 

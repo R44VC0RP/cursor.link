@@ -86,7 +86,7 @@ export class AuthManager {
   async makeAuthenticatedRequest(endpoint: string, options: RequestInit = {}) {
     const token = this.getStoredToken();
     if (!token) {
-      throw new Error('Not authenticated. Run: cursor-link auth login');
+      throw new Error('Not authenticated. Run: cursor-link login');
     }
 
     const headers = {
@@ -113,6 +113,8 @@ export class AuthManager {
 
       if (error || !data) {
         spinner.fail(`Error: ${error?.error_description || 'Failed to get device code'}`);
+        console.error('Debug - Full error response:', JSON.stringify(error, null, 2));
+        console.error('Debug - Data response:', JSON.stringify(data, null, 2));
         return false;
       }
 
@@ -243,7 +245,7 @@ export class AuthManager {
     const token = this.getStoredToken();
     if (!token) {
       console.log(chalk.red('❌ Not authenticated'));
-      console.log(chalk.gray('Run: cursor-link auth login'));
+      console.log(chalk.gray('Run: cursor-link login'));
       return false;
     }
 
@@ -256,7 +258,7 @@ export class AuthManager {
       return true;
     } else {
       console.log(chalk.red('❌ Token expired or invalid'));
-      console.log(chalk.gray('Run: cursor-link auth login'));
+      console.log(chalk.gray('Run: cursor-link login'));
       this.clearToken();
       return false;
     }

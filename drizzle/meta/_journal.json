@@ -36,6 +36,13 @@
       "when": 1756314716557,
       "tag": "0004_tan_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756759520258,
+      "tag": "0005_brave_random",
+      "breakpoints": true
     }
   ]
 }

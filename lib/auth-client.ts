@@ -1,9 +1,9 @@
 import { createAuthClient } from "better-auth/react"
-import { magicLinkClient } from "better-auth/client/plugins"
+import { magicLinkClient, deviceAuthorizationClient } from "better-auth/client/plugins"
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-  plugins: [magicLinkClient()],
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://cursor.link",
+  plugins: [magicLinkClient(), deviceAuthorizationClient()],
 })
 
 // Pre-hydrate session store from server-injected data to avoid flicker

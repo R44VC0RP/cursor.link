@@ -28,10 +28,19 @@ program
   .action(pullCommand);
 
 program
-  .command('auth')
-  .description('Manage authentication')
-  .argument('[action]', 'Action to perform (login, logout, status)', 'status')
-  .action(authCommand);
+  .command('login')
+  .description('Login to cursor.link')
+  .action(() => authCommand('login'));
+
+program
+  .command('logout')
+  .description('Logout from cursor.link')
+  .action(() => authCommand('logout'));
+
+program
+  .command('status')
+  .description('Show authentication status')
+  .action(() => authCommand('status'));
 
 program.on('command:*', () => {
   console.error(chalk.red(`Invalid command: ${program.args.join(' ')}`));
