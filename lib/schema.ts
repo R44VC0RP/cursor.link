@@ -85,6 +85,6 @@ export const deviceCode = pgTable("deviceCode", {
   expiresAt: timestamp("expiresAt").notNull(),
   lastPolledAt: timestamp("lastPolledAt"),
   pollingInterval: integer("pollingInterval"),
-  createdAt: timestamp("createdAt").notNull(),
-  updatedAt: timestamp("updatedAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })

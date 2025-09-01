@@ -43,6 +43,13 @@
       "when": 1756759520258,
       "tag": "0005_brave_random",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1756760991638,
+      "tag": "0006_smiling_white_queen",
+      "breakpoints": true
     }
   ]
 }
