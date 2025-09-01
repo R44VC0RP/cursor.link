@@ -1,0 +1,28 @@
+# Source files
+src/
+tsconfig.json
+
+# Development files
+*.log
+.DS_Store
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Test files
+test/
+tests/
+*.test.js
+*.test.ts
+
+# Documentation that's not needed in package
+docs/
+
+# Build artifacts that shouldn't be published
+coverage/

@@ -1,9 +1,10 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { magicLink } from "better-auth/plugins"
+import { magicLink, deviceAuthorization } from "better-auth/plugins"
 import { Inbound } from "@inboundemail/sdk"
 import { db } from "./db"
 import { env } from "./env"
+
 
 // Initialize Inbound for email sending
 const inbound = new Inbound(env.INBOUND_API_KEY)
@@ -22,6 +23,11 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    deviceAuthorization({ 
+      // Optional configuration
+      expiresIn: "30m", // Device code expiration time
+      interval: "5s",    // Minimum polling interval
+    }), 
     magicLink({
       sendMagicLink: async ({ email, token, url }) => {
         try {

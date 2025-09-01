@@ -5,7 +5,7 @@ import { useQueryState } from "nuqs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Copy, Download, Share2, ChevronDown, Save, User, ChevronUp } from "lucide-react"
+import { Copy, Download, Share2, ChevronDown, Save, User, ChevronUp, Image } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { Header } from "@/components/header"
 import { useSession } from "@/lib/auth-client"
@@ -62,6 +62,7 @@ function HomePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cursorPositionRef = useRef<number>(0)
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const autoDetectionAppliedRef = useRef<boolean>(false)
 
   const ruleOptions = [
     {
@@ -97,6 +98,8 @@ function HomePage() {
 
   useEffect(() => {
     setLocalContent(urlContent)
+    // Reset auto-detection flag when content changes from URL
+    autoDetectionAppliedRef.current = false
   }, [urlContent])
 
   useEffect(() => {
@@ -142,12 +145,16 @@ function HomePage() {
     setLocalContent(value)
 
     // Detect if this looks like a large cursor rule and auto-set to manual if needed
-    if (value.length > 2000 && selectedRule === 'always') {
+    // Only run auto-detection if it hasn't been applied already and this is user input
+    if (value.length > 2000 && selectedRule === 'always' && !autoDetectionAppliedRef.current) {
       // Extract potential slugs from the content
       const slugMatches = value.match(/@[a-zA-Z0-9-_]+/g) || []
       const uniqueSlugs = Array.from(new Set(slugMatches)).slice(0, 10) // Limit to 10 slugs
       
       if (slugMatches.length > 3) {
+        // Mark auto-detection as applied to prevent re-triggering
+        autoDetectionAppliedRef.current = true
+        
         setDetectedSlugs(uniqueSlugs)
         setShowSlugsList(true)
         setSelectedRule('manual')
@@ -374,6 +381,38 @@ function HomePage() {
     toast.success("View URL copied to clipboard!")
   }
 
+  const handleCopyPreviewImage = async () => {
+    if (!session || !savedRuleId) {
+      toast.error("Please save the rule first")
+      return
+    }
+
+    try {
+      const slug = createSlug(localTitle, savedRuleId)
+      const imageUrl = `${window.location.origin}/rule/${slug}/opengraph-image`
+      
+      // Fetch the image
+      const response = await fetch(imageUrl)
+      if (!response.ok) throw new Error('Failed to fetch image')
+      
+      // Convert to blob
+      const blob = await response.blob()
+      
+      // Copy to clipboard
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ])
+      
+      track("Preview Image Copied", { ruleId: savedRuleId })
+      toast.success("Preview image copied to clipboard!")
+    } catch (error) {
+      console.error('Error copying image:', error)
+      toast.error("Failed to copy preview image")
+    }
+  }
+
   const handleClone = () => {
     // Clear the editId to create a new rule with same content
     setUrlEditId("")
@@ -434,6 +473,9 @@ function HomePage() {
       const newContent = rule.frontmatter + cleanContent
       setLocalContent(newContent)
       setUrlContent(newContent) // Update URL immediately for rule changes
+      
+      // Reset auto-detection flag when rule is manually changed
+      autoDetectionAppliedRef.current = false
     }
     setIsDropdownOpen(false)
     track("Rule Type Changed", { ruleType: ruleId })
@@ -638,6 +680,26 @@ UI and Styling
                           >
                             <Share2 className="h-3 w-3" />
                             <span className="hidden md:inline ml-1">URL</span>
+                          </Button>
+                        </TooltipTrigger>
+                        {!isPublic && (
+                          <TooltipContent>
+                            <p>Share first</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={isPublic ? handleCopyPreviewImage : undefined}
+                            disabled={!isPublic}
+                            variant="primary"
+                            size="sm"
+                            className={`hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto ${!isPublic ? "opacity-50" : ""}`}
+                          >
+                            <Image className="h-3 w-3" />
+                            <span className="hidden md:inline ml-1">Image</span>
                           </Button>
                         </TooltipTrigger>
                         {!isPublic && (
