@@ -28,6 +28,10 @@ interface StoredToken {
     name?: string;
     email?: string;
   };
+  // Persist the server base URL used during authentication so subsequent
+  // commands (e.g. status) target the same environment without requiring
+  // env vars to be re-set in new shells.
+  server_base_url?: string;
 }
 
 export class AuthManager {
@@ -35,6 +39,18 @@ export class AuthManager {
     if (!fs.existsSync(CONFIG_DIR)) {
       fs.mkdirSync(CONFIG_DIR, { recursive: true });
     }
+  }
+
+  private getBaseUrl(): string {
+    // Priority: explicit env var -> persisted token server -> default prod
+    if (process.env.CURSOR_LINK_URL && process.env.CURSOR_LINK_URL.trim().length > 0) {
+      return process.env.CURSOR_LINK_URL;
+    }
+    const stored = this.getStoredToken();
+    if (stored?.server_base_url && stored.server_base_url.trim().length > 0) {
+      return stored.server_base_url;
+    }
+    return BASE_URL;
   }
 
   getStoredToken(): StoredToken | null {
@@ -82,9 +98,39 @@ export class AuthManager {
     }
 
     try {
-      // Verify token is still valid by making a test request
-      const response = await this.makeAuthenticatedRequest('/api/my-rules');
-      return response.ok;
+      // Verify token by calling Better Auth's get-session endpoint using the
+      // Authorization header. If that fails and we're using the default prod
+      // URL, try a localhost fallback to assist local development scenarios.
+      const baseUrl = this.getBaseUrl();
+      const headers = {
+        'Authorization': `Bearer ${token.access_token}`,
+        'Content-Type': 'application/json',
+      } as Record<string, string>;
+
+      let response = await fetch(`${baseUrl}/api/auth/get-session`, { headers });
+      if (response.ok) {
+        const text = await response.text();
+        if (text && text !== 'null') return true;
+      }
+
+      // Fallback only if base URL came from default and no persisted/env base
+      const hasExplicitEnv = Boolean(process.env.CURSOR_LINK_URL && process.env.CURSOR_LINK_URL.trim().length > 0);
+      const hasPersistedBase = Boolean(token.server_base_url && token.server_base_url.trim().length > 0);
+      const fallbackBase = 'http://localhost:3000';
+      if (!hasExplicitEnv && !hasPersistedBase && baseUrl === 'https://cursor.link') {
+        try {
+          response = await fetch(`${fallbackBase}/api/auth/get-session`, { headers });
+          if (response.ok) {
+            const text = await response.text();
+            if (text && text !== 'null') {
+              // Persist the discovered base URL so future requests use it
+              this.saveToken({ ...token, server_base_url: fallbackBase });
+              return true;
+            }
+          }
+        } catch {/* ignore */}
+      }
+      return false;
     } catch {
       return false;
     }
@@ -96,13 +142,14 @@ export class AuthManager {
       throw new Error('Not authenticated. Run: cursor-link login');
     }
 
+    const baseUrl = this.getBaseUrl();
     const headers = {
       'Authorization': `Bearer ${token.access_token}`,
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
-    return fetch(`${BASE_URL}${endpoint}`, {
+    return fetch(`${baseUrl}${endpoint}`, {
       ...options,
       headers,
     });
@@ -198,6 +245,7 @@ export class AuthManager {
                 refresh_token: (data as any).refresh_token,
                 expires_at: expiresAt,
                 user: (data as any).user, // User info might be in the token response
+                server_base_url: BASE_URL,
               };
               
               console.log('Debug - Saving token data:', JSON.stringify(tokenData, null, 2));
@@ -277,15 +325,32 @@ export class AuthManager {
 
     if (await this.isAuthenticated()) {
       console.log(chalk.green('✅ Authenticated'));
-      if (token.user) {
-        console.log(chalk.gray(`   User: ${token.user.name} (${token.user.email})`));
-      }
-      console.log(chalk.gray(`   Server: ${BASE_URL}`));
+      // Best-effort fetch of session info for display
+      try {
+        const baseUrl = this.getBaseUrl();
+        const resp = await fetch(`${baseUrl}/api/auth/get-session`, {
+          headers: {
+            'Authorization': `Bearer ${token.access_token}`,
+          },
+        });
+        if (resp.ok) {
+          const text = await resp.text();
+          if (text && text !== 'null') {
+            const session = JSON.parse(text);
+            const name = session?.user?.name || session?.user?.email || undefined;
+            if (name) {
+              console.log(chalk.gray(`   User: ${name}`));
+            }
+          }
+        }
+      } catch {/* ignore */}
+      console.log(chalk.gray(`   Server: ${this.getBaseUrl()}`));
       return true;
     } else {
       console.log(chalk.red('❌ Token expired or invalid'));
       console.log(chalk.gray('Run: cursor-link login'));
-      this.clearToken();
+      // Do not auto-delete the token file here; keep it for debugging and
+      // to allow environment fixes without forcing a fresh login.
       return false;
     }
   }

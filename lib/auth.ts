@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { magicLink, deviceAuthorization } from "better-auth/plugins"
+import { bearer } from "better-auth/plugins/bearer"
 import { Inbound } from "@inboundemail/sdk"
 import { db } from "./db"
 import { env } from "./env"
@@ -25,6 +26,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    bearer(),
     deviceAuthorization({ 
       // Optional configuration
       expiresIn: "30m", // Device code expiration time
