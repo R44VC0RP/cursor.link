@@ -68,8 +68,8 @@ export default function DeviceApprovalPage() {
   // Show loading while checking authentication
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center text-foreground">Loading...</div>
       </div>
     );
   }
@@ -82,11 +82,11 @@ export default function DeviceApprovalPage() {
   // Show error if no user code
   if (!userCode) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-red-600">Invalid Request</CardTitle>
-            <CardDescription>No device code provided.</CardDescription>
+            <CardTitle className="text-destructive">Invalid Request</CardTitle>
+            <CardDescription className="text-muted-foreground">No device code provided.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -94,29 +94,29 @@ export default function DeviceApprovalPage() {
   }
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Device Authorization</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Device Authorization</CardTitle>
+          <CardDescription className="text-muted-foreground">
             A device is requesting access to your account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-gray-100 p-4 rounded-lg text-center">
-            <p className="text-sm text-gray-600 mb-2">Device Code:</p>
-            <p className="text-lg font-mono font-semibold">{userCode}</p>
+          <div className="bg-muted/50 border border-border p-4 rounded-lg text-center">
+            <p className="text-sm text-muted-foreground mb-2">Device Code:</p>
+            <p className="text-lg font-mono font-semibold text-foreground">{userCode}</p>
           </div>
           
-          <div className="text-sm text-gray-600 text-center">
-            <p>Signed in as: <strong>{session.user.name || session.user.email}</strong></p>
+          <div className="text-sm text-muted-foreground text-center">
+            <p>Signed in as: <strong className="text-foreground">{session.user.name || session.user.email}</strong></p>
           </div>
           
           {message && (
-            <div className={`text-sm text-center p-3 rounded ${
+            <div className={`text-sm text-center p-3 rounded-lg border ${
               message.includes('successfully') || message.includes('denied') 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
+                ? 'bg-green-500/10 border-green-500/20 text-green-400' 
+                : 'bg-destructive/10 border-destructive/20 text-destructive'
             }`}>
               {message}
             </div>
@@ -126,7 +126,7 @@ export default function DeviceApprovalPage() {
             <Button 
               onClick={handleApprove} 
               disabled={isProcessing}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white border-0"
             >
               {isProcessing ? "Processing..." : "Approve"}
             </Button>
@@ -134,13 +134,13 @@ export default function DeviceApprovalPage() {
               onClick={handleDeny} 
               disabled={isProcessing}
               variant="outline"
-              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              className="flex-1 border-border text-foreground hover:bg-muted/50"
             >
               {isProcessing ? "Processing..." : "Deny"}
             </Button>
           </div>
           
-          <div className="text-xs text-gray-500 text-center">
+          <div className="text-xs text-muted-foreground text-center">
             <p>Only approve if you initiated this request from your device.</p>
           </div>
         </CardContent>

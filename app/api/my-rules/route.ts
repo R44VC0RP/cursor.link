@@ -6,9 +6,32 @@ import { eq, desc } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
+    // Try Bearer token first (for CLI/device auth)
+    const authHeader = request.headers.get('Authorization')
+    let session = null
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      // Device auth tokens are valid session tokens in better-auth
+      // We can get the session using the token
+      try {
+        session = await auth.api.getSession({
+          headers: new Headers({
+            ...Object.fromEntries(request.headers.entries()),
+            'Authorization': `Bearer ${token}`
+          })
+        })
+      } catch (error) {
+        console.error('Bearer token validation failed:', error)
+      }
+    }
+    
+    // Fall back to cookie-based session if no Bearer token or it failed
+    if (!session) {
+      session = await auth.api.getSession({
+        headers: request.headers
+      })
+    }
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

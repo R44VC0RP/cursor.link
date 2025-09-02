@@ -35,7 +35,6 @@ export function MagicLinkForm({
     try {
       const result = await authClient.signIn.magicLink({
         email,
-
       })
 
       if (result.error) {

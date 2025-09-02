@@ -37,11 +37,11 @@ export default function DeviceAuthorizationPage() {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Device Authorization</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Device Authorization</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Enter the code displayed on your device to continue
           </CardDescription>
         </CardHeader>
@@ -54,27 +54,27 @@ export default function DeviceAuthorizationPage() {
                 onChange={(e) => setUserCode(e.target.value)}
                 placeholder="Enter device code (e.g., ABCD-1234)"
                 maxLength={12}
-                className="text-center text-lg font-mono"
+                className="text-center text-lg font-mono bg-card border-border text-foreground"
                 disabled={isVerifying}
               />
             </div>
             
             {error && (
-              <div className="text-red-600 text-sm text-center">
+              <div className="text-destructive text-sm text-center bg-destructive/10 p-3 rounded-lg">
                 {error}
               </div>
             )}
             
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
               disabled={isVerifying || !userCode.trim()}
             >
               {isVerifying ? "Verifying..." : "Continue"}
             </Button>
           </form>
           
-          <div className="mt-4 text-xs text-gray-500 text-center">
+          <div className="mt-4 text-xs text-muted-foreground text-center">
             <p>Looking for the code? Check your CLI or device screen.</p>
           </div>
         </CardContent>

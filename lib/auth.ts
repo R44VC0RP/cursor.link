@@ -10,7 +10,8 @@ import { env } from "./env"
 const inbound = new Inbound(env.INBOUND_API_KEY)
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://cursor.link",
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production' ? "http://localhost:3000" : "https://cursor.link"),
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
@@ -39,6 +40,14 @@ export const auth = betterAuth({
     }), 
     magicLink({
       sendMagicLink: async ({ email, token, url }) => {
+        // Console log magic link in development environments
+        if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+          console.log('🔗 Magic Link for development:')
+          console.log(`📧 Email: ${email}`)
+          console.log(`🔐 Magic Link: ${url}`)
+          console.log('Copy and paste the magic link above into your browser to sign in.')
+        }
+
         try {
           await inbound.emails.send({
             from: "Cursor Link <auth@cursor.link>",

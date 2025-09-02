@@ -58,8 +58,15 @@ export class AuthManager {
   }
 
   saveToken(tokenData: StoredToken) {
-    this.ensureConfigDir();
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify(tokenData, null, 2));
+    try {
+      this.ensureConfigDir();
+      console.log('Debug - Writing to file:', TOKEN_FILE);
+      fs.writeFileSync(TOKEN_FILE, JSON.stringify(tokenData, null, 2));
+      console.log('Debug - File write successful');
+    } catch (error) {
+      console.error('Debug - Error saving token:', error);
+      throw error;
+    }
   }
 
   clearToken() {
@@ -175,33 +182,52 @@ export class AuthManager {
           if (data?.access_token) {
             spinner.succeed('✅ Authorization successful!');
             
-            // Get user session
+            console.log('Debug - Token response:', JSON.stringify(data, null, 2));
+            
+            // The device authorization token is actually a session token from better-auth
+            // We need to save it properly to use with API requests
             try {
-              const { data: session } = await authClient.getSession({
-                fetchOptions: {
-                  headers: {
-                    Authorization: `Bearer ${data.access_token}`,
-                  },
-                },
-              });
-
               // Calculate expiration (default to 7 days if not provided)
               const expiresAt = data.expires_in 
                 ? Date.now() + (data.expires_in * 1000)
                 : Date.now() + (7 * 24 * 60 * 60 * 1000);
 
-              this.saveToken({
+              // Save the session token
+              const tokenData = {
                 access_token: data.access_token,
                 refresh_token: (data as any).refresh_token,
                 expires_at: expiresAt,
-                user: session?.user,
-              });
+                user: (data as any).user, // User info might be in the token response
+              };
+              
+              console.log('Debug - Saving token data:', JSON.stringify(tokenData, null, 2));
+              this.saveToken(tokenData);
+              console.log('Debug - Token saved successfully');
 
-              console.log(chalk.green(`\nWelcome, ${session?.user?.name || session?.user?.email || 'User'}! 🎉`));
+              // Verify token was saved
+              const savedToken = this.getStoredToken();
+              console.log('Debug - Verified saved token:', savedToken ? 'Found' : 'Not found');
+
+              // Try to get session info for display
+              try {
+                const { data: session } = await authClient.getSession({
+                  fetchOptions: {
+                    headers: {
+                      Authorization: `Bearer ${data.access_token}`,
+                    },
+                  },
+                });
+                console.log(chalk.green(`\nWelcome, ${session?.user?.name || session?.user?.email || 'User'}! 🎉`));
+              } catch {
+                console.log(chalk.green(`\nAuthentication successful! 🎉`));
+              }
+
               resolve(true);
-            } catch (sessionError) {
-              console.error('Failed to get user session:', sessionError);
+              return; // Stop polling after successful authentication
+            } catch (saveError) {
+              console.error('Failed to save token:', saveError);
               resolve(false);
+              return; // Stop polling after error
             }
           } else if (error) {
             switch (error.error) {

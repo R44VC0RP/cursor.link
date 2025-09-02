@@ -11,10 +11,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const ruleId = searchParams.get("ruleId")
     
-    // Try to get session (but don't require it)
-    const session = await auth.api.getSession({
-      headers: request.headers
-    }).catch(() => null)
+    // Try to get session (but don't require it for GET)
+    let session = null
+    
+    // Try Bearer token first (for CLI/device auth)
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      try {
+        session = await auth.api.getSession({
+          headers: new Headers({
+            ...Object.fromEntries(request.headers.entries()),
+            'Authorization': `Bearer ${token}`
+          })
+        })
+      } catch (error) {
+        console.error('Bearer token validation failed:', error)
+      }
+    }
+    
+    // Fall back to cookie-based session
+    if (!session) {
+      session = await auth.api.getSession({
+        headers: request.headers
+      }).catch(() => null)
+    }
 
     // Build where condition based on authentication and ruleId
     let whereCondition
@@ -70,9 +91,30 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
+    // Try Bearer token first (for CLI/device auth)
+    const authHeader = request.headers.get('Authorization')
+    let session = null
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      try {
+        session = await auth.api.getSession({
+          headers: new Headers({
+            ...Object.fromEntries(request.headers.entries()),
+            'Authorization': `Bearer ${token}`
+          })
+        })
+      } catch (error) {
+        console.error('Bearer token validation failed:', error)
+      }
+    }
+    
+    // Fall back to cookie-based session
+    if (!session) {
+      session = await auth.api.getSession({
+        headers: request.headers
+      })
+    }
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -110,9 +152,30 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
+    // Try Bearer token first (for CLI/device auth)
+    const authHeader = request.headers.get('Authorization')
+    let session = null
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      try {
+        session = await auth.api.getSession({
+          headers: new Headers({
+            ...Object.fromEntries(request.headers.entries()),
+            'Authorization': `Bearer ${token}`
+          })
+        })
+      } catch (error) {
+        console.error('Bearer token validation failed:', error)
+      }
+    }
+    
+    // Fall back to cookie-based session
+    if (!session) {
+      session = await auth.api.getSession({
+        headers: request.headers
+      })
+    }
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -154,9 +217,30 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
+    // Try Bearer token first (for CLI/device auth)
+    const authHeader = request.headers.get('Authorization')
+    let session = null
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      try {
+        session = await auth.api.getSession({
+          headers: new Headers({
+            ...Object.fromEntries(request.headers.entries()),
+            'Authorization': `Bearer ${token}`
+          })
+        })
+      } catch (error) {
+        console.error('Bearer token validation failed:', error)
+      }
+    }
+    
+    // Fall back to cookie-based session
+    if (!session) {
+      session = await auth.api.getSession({
+        headers: request.headers
+      })
+    }
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
