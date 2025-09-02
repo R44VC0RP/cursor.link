@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cursorRule, user } from "@/lib/schema"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, or, ilike } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch most viewed public rules
-    const rules = await db
+    const { searchParams } = new URL(request.url)
+    const searchQuery = searchParams.get('q')
+
+    let query = db
       .select({
         id: cursorRule.id,
         title: cursorRule.title,
@@ -22,6 +24,22 @@ export async function GET(request: NextRequest) {
       .from(cursorRule)
       .innerJoin(user, eq(cursorRule.userId, user.id))
       .where(eq(cursorRule.isPublic, true))
+
+    // Add search filter if query is provided
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = `%${searchQuery.trim()}%`
+      query = query.where(
+        or(
+          eq(cursorRule.isPublic, true),
+          ilike(cursorRule.title, searchTerm),
+          ilike(cursorRule.content, searchTerm),
+          ilike(user.name, searchTerm)
+        )
+      )
+    }
+
+    // Fetch most viewed public rules (with optional search)
+    const rules = await query
       .orderBy(desc(cursorRule.views), desc(cursorRule.createdAt))
       .limit(50)
 

@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
-import { Eye, Clock } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Eye, Clock, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import { track } from "@vercel/analytics"
 import { AddToListButton } from "@/components/lists/add-to-list-button"
@@ -114,6 +115,8 @@ export default function FeedPage() {
   const [newRules, setNewRules] = useState<CursorRule[]>([])
   const [loading, setLoading] = useState(true)
   const [actionStates, setActionStates] = useState<{[key: string]: boolean}>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
 
   // Helper function to show checkmark feedback
   const showActionFeedback = (actionKey: string) => {
@@ -132,14 +135,31 @@ export default function FeedPage() {
     </svg>
   )
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   useEffect(() => {
     const fetchRules = async () => {
       setLoading(true)
       try {
+        // Build URLs with search query if present
+        const hotUrl = debouncedSearchQuery 
+          ? `/api/feed/hot?q=${encodeURIComponent(debouncedSearchQuery)}`
+          : '/api/feed/hot'
+        const newUrl = debouncedSearchQuery 
+          ? `/api/feed/new?q=${encodeURIComponent(debouncedSearchQuery)}`
+          : '/api/feed/new'
+
         // Fetch both hot and new rules in parallel
         const [hotResponse, newResponse] = await Promise.all([
-          fetch('/api/feed/hot'),
-          fetch('/api/feed/new')
+          fetch(hotUrl),
+          fetch(newUrl)
         ])
 
         if (hotResponse.ok) {
@@ -160,7 +180,7 @@ export default function FeedPage() {
     }
 
     fetchRules()
-  }, [])
+  }, [debouncedSearchQuery])
 
   const handleCopyContent = async (rule: CursorRule) => {
     await navigator.clipboard.writeText(rule.content)
@@ -205,6 +225,26 @@ export default function FeedPage() {
             <p className="text-gray-400 text-sm mt-1">Discover popular and recently created cursor rules from the community</p>
           </div>
 
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search rules by title, content, or author..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10 bg-[#1B1D21] border-white/10 text-white placeholder:text-gray-400 focus:border-[#70A7D7] focus:ring-[#70A7D7]"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
           {/* Tabs */}
           <div className="flex items-center border-b border-white/10">
             <button
@@ -245,27 +285,36 @@ export default function FeedPage() {
               {currentRules.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-12 h-12 mx-auto mb-4 opacity-30">
-                    {activeTab === 'hot' ? (
+                    {debouncedSearchQuery ? (
+                      <Search className="w-full h-full text-gray-400" />
+                    ) : activeTab === 'hot' ? (
                       <Eye className="w-full h-full text-gray-400" />
                     ) : (
                       <Clock className="w-full h-full text-gray-400" />
                     )}
                   </div>
                   <h3 className="text-lg font-medium text-white mb-2">
-                    No {activeTab} rules yet
+                    {debouncedSearchQuery 
+                      ? 'No results found' 
+                      : `No ${activeTab} rules yet`
+                    }
                   </h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    {activeTab === 'hot' 
-                      ? 'Be the first to create a popular rule!' 
-                      : 'Check back later for new rules from the community.'
+                    {debouncedSearchQuery 
+                      ? `No rules found matching "${debouncedSearchQuery}". Try a different search term.`
+                      : activeTab === 'hot' 
+                        ? 'Be the first to create a popular rule!' 
+                        : 'Check back later for new rules from the community.'
                     }
                   </p>
-                  <Link 
-                    href="/"
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#70A7D7] hover:bg-[#8BB8E8] transition-colors rounded-md"
-                  >
-                    Create a Rule
-                  </Link>
+                  {!debouncedSearchQuery && (
+                    <Link 
+                      href="/"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#70A7D7] hover:bg-[#8BB8E8] transition-colors rounded-md"
+                    >
+                      Create a Rule
+                    </Link>
+                  )}
                 </div>
               ) : (
                 currentRules.map((rule, index) => (
