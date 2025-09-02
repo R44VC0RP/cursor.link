@@ -1,6 +1,6 @@
 {
   "name": "cursor-link",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI tool to sync cursor rules with cursor.link",
   "main": "dist/index.js",
   "type": "module",

@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('cursor-link')
   .description('CLI tool to sync cursor rules with cursor.link')
-  .version('1.0.0');
+  .version('1.1.0');
 
 program
   .command('push')
