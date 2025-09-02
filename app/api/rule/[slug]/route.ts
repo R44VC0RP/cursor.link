@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cursorRule, user } from "@/lib/schema"
-import { eq, and, like } from "drizzle-orm"
+import { eq, and, like, or } from "drizzle-orm"
+import { auth } from "@/lib/auth"
 
 function parseSlug(slug: string): { title: string; last3: string } | null {
   // Extract the last 3 characters after the last dash
@@ -51,6 +52,28 @@ export async function GET(
     
     const { title, last3 } = parsed
     
+    // Try to get session (cookie or bearer) to allow owners to access private rules
+    let session = null as any
+    try {
+      // Prefer bearer token if present
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.slice(7)
+        session = await auth.api.getSession({
+          headers: new Headers({
+            ...Object.fromEntries(request.headers.entries()),
+            'Authorization': `Bearer ${token}`,
+          }),
+        })
+      }
+    } catch {
+      // ignore
+    }
+    
+    if (!session) {
+      session = await auth.api.getSession({ headers: request.headers }).catch(() => null)
+    }
+    
     // Find rule by matching the title pattern and last 3 characters of ID
     // and ensure it's public
     const rules = await db
@@ -59,20 +82,31 @@ export async function GET(
         title: cursorRule.title,
         content: cursorRule.content,
         ruleType: cursorRule.ruleType,
+        isPublic: cursorRule.isPublic,
         views: cursorRule.views,
         createdAt: cursorRule.createdAt,
         updatedAt: cursorRule.updatedAt,
         user: {
-          name: user.name
+          id: user.id,
+          name: user.name,
+          email: user.email,
         }
       })
       .from(cursorRule)
       .leftJoin(user, eq(cursorRule.userId, user.id))
       .where(
-        and(
-          eq(cursorRule.isPublic, true),
-          like(cursorRule.id, `%${last3}`)
-        )
+        session
+          ? and(
+              or(
+                eq(cursorRule.isPublic, true),
+                eq(cursorRule.userId, session.user.id)
+              ),
+              like(cursorRule.id, `%${last3}`)
+            )
+          : and(
+              eq(cursorRule.isPublic, true),
+              like(cursorRule.id, `%${last3}`)
+            )
       )
 
     // Filter rules to match the title pattern and exact ID suffix

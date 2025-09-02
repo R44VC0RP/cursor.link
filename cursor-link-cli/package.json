@@ -7,6 +7,9 @@
   "bin": {
     "cursor-link": "dist/index.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

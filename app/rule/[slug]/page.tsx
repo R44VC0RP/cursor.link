@@ -19,10 +19,12 @@ interface CursorRule {
   title: string
   content: string
   ruleType: string
+  isPublic: boolean
   views: number
   createdAt: string
   updatedAt: string
   user: {
+    id: string
     name: string
     email: string
   }
@@ -82,6 +84,7 @@ export default function PublicRulePage() {
   const [tokenCount, setTokenCount] = useState(0)
   const [copied, setCopied] = useState(false)
   const [cliCopied, setCliCopied] = useState(false)
+  const [makingPublic, setMakingPublic] = useState(false)
 
   useEffect(() => {
     const fetchRule = async () => {
@@ -140,6 +143,35 @@ export default function PublicRulePage() {
     toast.success("Install command copied to clipboard!")
   }
 
+  const handleMakePublic = async () => {
+    if (!rule) return
+    try {
+      setMakingPublic(true)
+      const response = await fetch('/api/cursor-rules', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: rule.id,
+          title: rule.title,
+          content: rule.content,
+          ruleType: rule.ruleType,
+          isPublic: true,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to update rule')
+      }
+      const updated = await response.json()
+      setRule(updated)
+      toast.success('Rule is now public')
+      track("Rule Made Public", { ruleId: updated.id })
+    } catch (error) {
+      toast.error('Could not make the rule public')
+    } finally {
+      setMakingPublic(false)
+    }
+  }
+
 
 
   const handleDownload = () => {
@@ -181,6 +213,20 @@ export default function PublicRulePage() {
     <div className="min-h-screen bg-[#16171A] text-white">
       <main className="mx-auto max-w-4xl p-4 sm:p-6">
         <Header />
+        {session?.user?.id && rule.user.id === session.user.id && !rule.isPublic && (
+          <div className="mt-4 mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-200 p-3 flex items-center justify-between">
+            <div className="text-sm">This rule is private. Make it public to share it.</div>
+            <Button
+              onClick={handleMakePublic}
+              size="sm"
+              variant="secondary"
+              disabled={makingPublic}
+              className="bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
+            >
+              {makingPublic ? 'Making public…' : 'Make it public'}
+            </Button>
+          </div>
+        )}
         
         <div className="space-y-4">
           {/* Title Input (Read-only) */}

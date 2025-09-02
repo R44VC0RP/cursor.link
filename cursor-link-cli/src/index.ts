@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { pushCommand } from './commands/push.js';
 import { pullCommand } from './commands/pull.js';
 import { authCommand } from './commands/auth.js';
+import { getCommand } from './commands/get.js';
 
 const program = new Command();
 
@@ -26,6 +27,12 @@ program
   .option('--list', 'List available rules')
   .option('--all', 'Pull all rules')
   .action(pullCommand);
+
+program
+  .command('get')
+  .description('Get a public rule by slug or id (no auth required)')
+  .argument('<identifier>', 'Rule slug (title-last3) or id')
+  .action((identifier: string) => getCommand(identifier));
 
 program
   .command('login')
