@@ -1,0 +1,147 @@
+---
+title: cursor-link CLI
+description: Sync your Cursor rules with cursor.link from the terminal.
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+## Installation
+
+Install globally (recommended):
+
+```bash
+pnpm add -g cursor-link
+```
+
+Or run on demand:
+
+```bash
+npx cursor-link --help
+```
+
+> Requires Node.js 18+ and a cursor.link account.
+
+## Quick Start
+
+<Steps>
+  <Step>
+
+### 1) Authenticate
+
+```bash
+cursor-link auth login
+```
+This opens a browser window for device authorization.
+
+  </Step>
+  <Step>
+
+### 2) Push your local rules
+
+```bash
+cursor-link push
+```
+Uploads `.mdc` files from `.cursor/rules/` to cursor.link.
+
+  </Step>
+  <Step>
+
+### 3) Pull rules to your project
+
+```bash
+cursor-link pull
+```
+Interactively select your remote rules to download.
+
+  </Step>
+</Steps>
+
+## Project Structure
+
+Wrap your Cursor rules in `.cursor/rules/` with `.mdc` files:
+
+<Files>
+  <Folder name=".cursor" defaultOpen>
+    <Folder name="rules" defaultOpen>
+      <File name="improve-readability.mdc" />
+      <File name="refactor-patterns.mdc" />
+    </Folder>
+  </Folder>
+</Files>
+
+Each `.mdc` file supports frontmatter:
+
+```md
+---
+alwaysApply: true
+---
+# My Rule Title
+
+Your rule content...
+```
+
+## Commands
+
+### auth
+
+```bash
+cursor-link auth login   # sign in via device authorization
+cursor-link auth status  # show current status
+cursor-link auth logout  # sign out
+```
+
+### push
+
+Push local rules to cursor.link.
+
+```bash
+cursor-link push [--public] [--force]
+```
+
+- `--public`: make pushed rules discoverable
+- `--force`: overwrite existing rules without prompts
+
+### pull
+
+Download rules from cursor.link to `.cursor/rules/`.
+
+```bash
+cursor-link pull [--all] [--list]
+```
+
+- `--all`: include public rules (in addition to yours)
+- `--list`: print available rules without downloading
+
+### get
+
+Print a rule’s content to stdout by slug or id (useful for scripting).
+
+```bash
+cursor-link get <slug-or-id>
+```
+
+## Configuration
+
+- `CURSOR_LINK_URL`: override the server base URL
+
+```bash
+export CURSOR_LINK_URL=https://cursor.link
+```
+
+## FAQ
+
+<Accordions type="single">
+  <Accordion title="Where are rules stored locally?">
+    In `.cursor/rules/` as `.mdc` files.
+  </Accordion>
+  <Accordion title="How do I change the server URL?">
+    Set the `CURSOR_LINK_URL` environment variable before running commands.
+  </Accordion>
+  <Accordion title="What permissions do I need?">
+    You must be authenticated (`cursor-link auth login`) to push/pull your rules.
+  </Accordion>
+</Accordions>
+
+

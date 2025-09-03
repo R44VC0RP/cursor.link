@@ -1,7 +1,93 @@
 ---
-title: Hello World
+title: Getting Started
+description: How to use cursor.link to create, share, and manage Cursor Rules.
 ---
 
-## Introduction
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-I love Anime.
+## Quick start
+
+<Steps>
+  <Step>
+
+### Create a rule
+
+Go to the home page and start writing a rule. Use the title input (e.g. `index.mdc`) and write your content in the editor.
+
+  </Step>
+  <Step>
+
+### Sign in to save
+
+Sign in with a magic link to save. You can also return to your pending edit after login.
+
+  </Step>
+  <Step>
+
+### Share or keep private
+
+Save privately by default. When ready, make it public to get a shareable URL and copy a one‑line install command.
+
+  </Step>
+  <Step>
+
+### Discover in Feed
+
+Browse the Feed to see popular and new public rules. Copy, download, or add rules to your lists.
+
+  </Step>
+  <Step>
+
+### Manage in Dashboard
+
+View, edit, delete, and make rules public from your Dashboard. You can also copy view links and install commands.
+
+  </Step>
+</Steps>
+
+## How it works
+
+- **Rule types**: Choose how the rule applies (Always Apply, Apply Manually, Specific Files, etc.).
+- **Private vs Public**: Rules are private by default. Public rules get a shareable URL and show up in the Feed.
+- **Install command**: For public rules, use the copy button to get an install command (via `npx shadcn add …`) that places the `.mdc` in `~/.cursor/rules/`.
+- **Lists**: Add rules to your lists to organize and re‑find them later.
+- **CLI docs**: Prefer terminal workflows? See the dedicated [cursor-link CLI](./cli) guide.
+
+## FAQ
+
+<Accordions type="single">
+  <Accordion title="How do I sign in?">
+    Use the magic-link sign in on the login page. After authenticating, you'll be redirected back to continue editing or saving.
+  </Accordion>
+
+  <Accordion title="Where do installed rules live?">
+    The install command places files in <code>~/.cursor/rules/</code> as <code>.mdc</code> files.
+  </Accordion>
+
+  <Accordion title="How do I make a rule public?">
+    From the editor or dashboard, choose Make Public. You'll get a shareable URL and an install command.
+  </Accordion>
+
+  <Accordion title="What's the difference between rule types?">
+    <b>Always Apply</b> runs everywhere; <b>Apply Manually</b> only when @‑mentioned; <b>Specific Files</b> activates when file patterns match.
+  </Accordion>
+
+  <Accordion title="How do I edit an existing rule?">
+    Open Dashboard and click Edit. You'll return to the editor pre‑filled with the rule for quick updates.
+  </Accordion>
+
+  <Accordion title="Can I organize rules?">
+    Yes. Use Add to List on feed or rule pages to categorize rules into personal lists.
+  </Accordion>
+
+  <Accordion title="Is there a CLI?">
+    Yes. Install, push, pull, and fetch rules from the terminal. See the [cursor-link CLI](./cli) page.
+  </Accordion>
+</Accordions>
+
+### CLI
+
+See how to use the cursor-link CLI to sync rules:
+
+- [cursor-link CLI](./cli)
