@@ -1,0 +1,1232 @@
+# Fumadocs Framework: Components
+URL: /docs/ui/components
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/index.mdx
+
+Additional components to improve your docs
+        
+***
+
+title: Components
+description: Additional components to improve your docs
+index: true
+-----------
+
+# Fumadocs Framework: Accordion
+URL: /docs/ui/components/accordion
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/accordion.mdx
+
+Add Accordions to your documentation
+        
+***
+
+title: Accordion
+description: Add Accordions to your documentation
+preview: accordion
+------------------
+
+<Installation name="accordion" />
+
+## Usage
+
+Based on
+[Radix UI Accordion](https://www.radix-ui.com/primitives/docs/components/accordion), useful for FAQ sections.
+
+```mdx
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+<Accordions type="single">
+  <Accordion title="My Title">My Content</Accordion>
+</Accordions>
+```
+
+### Accordions
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="AccordionsProps" />
+
+### Accordion
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="AccordionProps" />
+
+### Linking to Accordion
+
+You can specify an `id` for accordion. The accordion will automatically open when the user is navigating to the page with the specified `id` in hash parameter.
+
+```mdx
+<Accordions>
+<Accordion title="My Title" id="my-title">
+
+My Content
+
+</Accordion>
+</Accordions>
+```
+
+> The value of accordion is same as title by default. When an id presents, it will be used as the value instead.
+# Fumadocs Framework: Auto Type Table
+URL: /docs/ui/components/auto-type-table
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/auto-type-table.mdx
+
+Auto-generated type table
+        
+***
+
+title: Auto Type Table
+description: Auto-generated type table
+--------------------------------------
+
+<Wrapper>
+  <div className="bg-fd-background p-4 rounded-xl">
+    <AutoTypeTable
+      name="AutoTypeTableExample"
+      type={`export interface AutoTypeTableExample {
+  /**
+   * Markdown syntax like links, \`code\` are supported.
+   *
+   * See https://fumadocs.vercel.app/docs/ui/components/type-table
+   */
+  name: string;
+
+  /**
+  * We love Shiki.
+  *
+  * \`\`\`ts
+  * console.log("Hello World, powered by Shiki");
+  * \`\`\`
+  */
+  options: Partial<{ a: unknown }>;
+
+}`}
+    />
+  </div>
+</Wrapper>
+
+<Callout title="Server Component only" type="warn">
+  You cannot use this in a client component.
+</Callout>
+
+It generates a table for your docs based on TypeScript definitions.
+
+## Usage
+
+<CodeBlockTabs defaultValue="npm">
+  <CodeBlockTabsList>
+    <CodeBlockTabsTrigger value="npm">
+      npm
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="pnpm">
+      pnpm
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="yarn">
+      yarn
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="bun">
+      bun
+    </CodeBlockTabsTrigger>
+  </CodeBlockTabsList>
+
+  <CodeBlockTab value="npm">
+    ```bash
+    npm install fumadocs-typescript
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="pnpm">
+    ```bash
+    pnpm add fumadocs-typescript
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="yarn">
+    ```bash
+    yarn add fumadocs-typescript
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="bun">
+    ```bash
+    bun add fumadocs-typescript
+    ```
+  </CodeBlockTab>
+</CodeBlockTabs>
+
+Initialize the TypeScript compiler and add it as a MDX component.
+
+```tsx title="mdx-components.tsx"
+import defaultComponents from 'fumadocs-ui/mdx';
+import type { MDXComponents } from 'mdx/types';
+import { createGenerator } from 'fumadocs-typescript';
+import { AutoTypeTable } from 'fumadocs-typescript/ui';
+
+const generator = createGenerator();
+
+export function getMDXComponents(components?: MDXComponents): MDXComponents {
+  return {
+    ...defaultComponents,
+    AutoTypeTable: (props) => (
+      <AutoTypeTable {...props} generator={generator} />
+    ),
+    ...components,
+  };
+}
+```
+
+### From File
+
+It accepts a `path` prop that points to a typescript file, and `name` for the exported type name.
+
+```ts title="path/to/file.ts"
+export interface MyInterface {
+  name: string;
+}
+```
+
+```mdx
+<AutoTypeTable path="./path/to/file.ts" name="MyInterface" />
+```
+
+The path is relative to your project directory (`cwd`), because `AutoTypeTable` is a React Server Component, it cannot access build-time information like MDX file path.
+
+### From Type
+
+You can specify the type to generate, without an actual TypeScript file.
+
+```mdx
+import { AutoTypeTable } from 'fumadocs-typescript/ui';
+
+<AutoTypeTable type="{ hello: string }" />
+```
+
+When a `path` is given, it shares the same context as the TypeScript file.
+
+```ts title="file.ts"
+export type A = { hello: string };
+```
+
+```mdx
+<AutoTypeTable path="file.ts" type="A & { world: string }" />
+```
+
+When `type` has multiple lines, the export statement and `name` prop are required.
+
+```mdx
+<AutoTypeTable
+  path="file.ts"
+  name="B"
+  type={`
+import { ReactNode } from "react"
+export type B = ReactNode | { world: string }
+`}
+/>
+```
+
+### Functions
+
+Notice that only object type is allowed. For functions, you should wrap them into an object instead.
+
+```ts
+export interface MyInterface {
+  myFn: (input: string) => void;
+}
+```
+
+### References
+
+<TypeTable
+  type={{
+  "name": "AutoTypeTableProps",
+  "description": "",
+  "entries": [
+    {
+      "name": "path",
+      "description": "The path to source TypeScript file.",
+      "tags": {},
+      "type": "string",
+      "required": false,
+      "deprecated": false
+    },
+    {
+      "name": "name",
+      "description": "Exported type name to generate from.",
+      "tags": {},
+      "type": "string",
+      "required": false,
+      "deprecated": false
+    },
+    {
+      "name": "type",
+      "description": "Set the type to generate from.\n\nWhen used with `name`, it generates the type with `name` as export name.\n\n```ts\nexport const myName = MyType;\n```\n\nWhen `type` contains multiple lines, `export const` is not added.\nYou need to export it manually, and specify the type name with `name`.\n\n```tsx\n<AutoTypeTable\n  path=\"./file.ts\"\n  type={`import { ReactNode } from \"react\"\n  export const MyName = ReactNode`}\n  name=\"MyName\"\n/>\n```",
+      "tags": {},
+      "type": "string",
+      "required": false,
+      "deprecated": false
+    },
+    {
+      "name": "generator",
+      "description": "",
+      "tags": {},
+      "type": "{ generateDocumentation(file: { path: string; content?: string | undefined; }, name: string | undefined, options?: GenerateOptions | undefined): GeneratedDoc[]; generateTypeTable(props: BaseTypeTableProps, options?: GenerateTypeTableOptions | undefined): Promise<...>; }",
+      "required": true,
+      "deprecated": false
+    },
+    {
+      "name": "renderMarkdown",
+      "description": "",
+      "tags": {},
+      "type": "((md: string) => Promise<ReactNode>)",
+      "required": false,
+      "deprecated": false
+    },
+    {
+      "name": "options",
+      "description": "",
+      "tags": {},
+      "type": "GenerateTypeTableOptions",
+      "required": false,
+      "deprecated": false
+    }
+  ]
+}}
+/>
+
+### File System
+
+It relies on the file system, hence, the page referencing this component must be built in **build time**. Rendering the component on serverless runtime may cause problems.
+
+### Deep Dive
+
+Under the hood, it uses the [Typescript Compiler API](https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API) to extract type information.
+Your `tsconfig.json` file in the current working directory will be loaded.
+
+To change the compiler settings, pass a `options` prop to the component.
+
+Learn more about [Typescript Docs Generation](/docs/ui/typescript).
+# Fumadocs Framework: Banner
+URL: /docs/ui/components/banner
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/banner.mdx
+
+Add a banner to your site
+        
+***
+
+title: Banner
+description: Add a banner to your site
+preview: banner
+---------------
+
+<Installation name="banner" />
+
+## Usage
+
+Put the element at the top of your root layout, you can use it for displaying announcements.
+
+```tsx
+import { Banner } from 'fumadocs-ui/components/banner';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <html lang="en">
+      <body>
+        <Banner>Hello World</Banner>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### Variant
+
+Change the default variant.
+
+```tsx
+import { Banner } from 'fumadocs-ui/components/banner';
+
+<Banner variant="rainbow">Hello World</Banner>;
+
+// customise colors
+<Banner
+  variant="rainbow"
+  rainbowColors={[
+    'rgba(255,100,0, 0.5)',
+    'rgba(255,100,0, 0.5)',
+    'transparent',
+    'rgba(255,100,0, 0.5)',
+    'transparent',
+    'rgba(255,100,0, 0.5)',
+    'transparent',
+  ]}
+>
+  Hello World
+</Banner>;
+```
+
+### Change Layout
+
+By default, the banner uses a `style` tag to modify Fumadocs layouts (e.g. reduce the sidebar height).
+You can disable it with:
+
+```tsx
+import { Banner } from 'fumadocs-ui/components/banner';
+
+<Banner changeLayout={false}>Hello World</Banner>;
+```
+
+### Close
+
+To allow users to close the banner, give the banner an ID.
+
+```tsx
+import { Banner } from 'fumadocs-ui/components/banner';
+
+<Banner id="hello-world">Hello World</Banner>;
+```
+
+The state will be automatically persisted.
+# Fumadocs Framework: Code Block (Dynamic)
+URL: /docs/ui/components/dynamic-codeblock
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/dynamic-codeblock.mdx
+
+A codeblock that also highlights code
+        
+***
+
+title: Code Block (Dynamic)
+description: A codeblock that also highlights code
+preview: dynamicCodeBlock
+-------------------------
+
+## Usage
+
+### Client Component
+
+```tsx
+import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock';
+
+<DynamicCodeBlock lang="ts" code='console.log("Hello World")' />;
+```
+
+Unlike the MDX [`CodeBlock`](/docs/ui/mdx/codeblock) component, this is a client component that can be used without MDX.
+It highlights the code with Shiki and use the default component to render it.
+
+Features:
+
+* Can be pre-rendered on server
+* load languages and themes on browser lazily
+
+#### Options
+
+```tsx
+import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock';
+
+<DynamicCodeBlock
+  lang="ts"
+  code='console.log("Hello World")'
+  options={{
+    themes: {
+      light: 'github-light',
+      dark: 'github-dark',
+    },
+    components: {
+      // override components (e.g. `pre` and `code`)
+    },
+    // other Shiki options
+  }}
+/>;
+```
+
+### Server Component
+
+For a server component equivalent, you can use the built-in utility from core:
+
+```tsx
+import * as Base from 'fumadocs-ui/components/codeblock';
+import { highlight } from 'fumadocs-core/highlight';
+import { type HTMLAttributes } from 'react';
+
+export async function CodeBlock({
+  code,
+  lang,
+  ...rest
+}: HTMLAttributes<HTMLElement> & {
+  code: string;
+  lang: string;
+}) {
+  const rendered = await highlight(code, {
+    lang,
+    components: {
+      pre: (props) => <Base.Pre {...props} />,
+    },
+    // other Shiki options
+  });
+
+  return <Base.CodeBlock {...rest}>{rendered}</Base.CodeBlock>;
+}
+
+```
+# Fumadocs Framework: Files
+URL: /docs/ui/components/files
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/files.mdx
+
+Display file structure in your documentation
+        
+***
+
+title: Files
+description: Display file structure in your documentation
+preview: 'files'
+----------------
+
+<Installation name="files" />
+
+## Usage
+
+Wrap file components in `Files`.
+
+```mdx
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
+
+<Files>
+  <Folder name="app" defaultOpen>
+    <File name="layout.tsx" />
+    <File name="page.tsx" />
+    <File name="global.css" />
+  </Folder>
+  <Folder name="components">
+    <File name="button.tsx" />
+    <File name="tabs.tsx" />
+    <File name="dialog.tsx" />
+  </Folder>
+  <File name="package.json" />
+</Files>
+```
+
+### File
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="FileProps" />
+
+### Folder
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="FolderProps" />
+
+### As CodeBlock
+
+You can convert `files` codeblocks into the MDX usage with the `remarkMdxFiles` remark plugin.
+
+```tsx tab="Fumadocs MDX" title="source.config.ts"
+import { remarkMdxFiles } from 'fumadocs-core/mdx-plugins';
+import { defineConfig } from 'fumadocs-mdx/config';
+
+export default defineConfig({
+  mdxOptions: {
+    remarkPlugins: [remarkMdxFiles],
+  },
+});
+```
+
+````md
+```files
+project
+├── src
+│   ├── index.js
+│   └── utils
+│       └── helper.js
+├── package.json
+```
+````
+# Fumadocs Framework: GitHub Info
+URL: /docs/ui/components/github-info
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/github-info.mdx
+
+Display your GitHub repository information
+        
+***
+
+title: GitHub Info
+description: Display your GitHub repository information
+preview: githubInfo
+-------------------
+
+<Installation name="github-info" />
+
+## Usage
+
+```tsx
+import { GithubInfo } from 'fumadocs-ui/components/github-info';
+
+<GithubInfo
+  owner="fuma-nama"
+  repo="fumadocs"
+  // your own GitHub access token (optional)
+  token={process.env.GITHUB_TOKEN}
+/>;
+```
+
+It's recommended to add it to your docs layout with `links` option:
+
+```tsx title="app/docs/layout.tsx"
+import { DocsLayout, type DocsLayoutProps } from 'fumadocs-ui/layouts/notebook';
+import type { ReactNode } from 'react';
+import { baseOptions } from '@/lib/layout.shared';
+import { source } from '@/lib/source';
+import { GithubInfo } from 'fumadocs-ui/components/github-info';
+
+const docsOptions: DocsLayoutProps = {
+  ...baseOptions(),
+  tree: source.pageTree,
+  links: [
+    {
+      type: 'custom',
+      children: (
+        <GithubInfo owner="fuma-nama" repo="fumadocs" className="lg:-mx-2" />
+      ),
+    },
+  ],
+};
+
+export default function Layout({ children }: { children: ReactNode }) {
+  return <DocsLayout {...docsOptions}>{children}</DocsLayout>;
+}
+```
+# Fumadocs Framework: Graph View
+URL: /docs/ui/components/graph-view
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/graph-view.mdx
+
+A graph of all pages.
+        
+***
+
+title: Graph View
+description: A graph of all pages.
+----------------------------------
+
+import { GraphView } from '@/components/graph-view';
+
+## Overview
+
+<GraphView />
+
+This component is still under experiment, not available on CLI yet.
+
+## Installation
+
+```tsx tab="graph-view.tsx"
+import { source } from '@/lib/source';
+import { GraphViewClient, Link, Node } from './graph-view.client';
+
+export type Graph = {
+  links: Link[];
+  nodes: Node[];
+};
+
+function buildGraph() {
+  const pages = source.getPages();
+  const graph: Graph = { links: [], nodes: [] };
+
+  for (const page of pages) {
+    graph.nodes.push({
+      id: page.url,
+      text: page.data.title,
+      description: page.data.description,
+    });
+
+    const { extractedReferences = [] } = page.data;
+    for (const ref of extractedReferences) {
+      const refPage = source.getPageByHref(ref.href);
+      if (!refPage) continue;
+
+      graph.links.push({
+        source: page.url,
+        target: refPage.page.url,
+      });
+    }
+  }
+
+  return graph;
+}
+
+export function GraphView() {
+  return <GraphViewClient {...buildGraph()} />;
+}
+
+```
+
+```tsx tab="graph-view.client.tsx"
+'use client';
+import {
+  lazy,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type {
+  ForceGraphMethods,
+  ForceGraphProps,
+  LinkObject,
+  NodeObject,
+} from 'react-force-graph-2d';
+
+export type Node = NodeObject<NodeType>;
+export type Link = LinkObject<NodeType, LinkType>;
+
+export type NodeType = {
+  text: string;
+  description?: string;
+  neighbors?: string[];
+};
+export type LinkType = Record<string, unknown>;
+
+export interface GraphViewProps {
+  nodes: Node[];
+  links: Link[];
+}
+
+const GraphViewLazy = lazy(async () => {
+  const { default: ForceGraph2D } = await import('react-force-graph-2d');
+  const { forceCollide } = await import('d3-force');
+
+  function Component({
+    containerRef,
+    nodes,
+    links,
+  }: GraphViewProps & { containerRef: RefObject<HTMLDivElement | null> }) {
+    const fgRef = useRef<ForceGraphMethods<Node, Link> | undefined>(undefined);
+    const hoveredRef = useRef<Node | null>(null);
+    const readyRef = useRef(false);
+    const [tooltip, setTooltip] = useState<{
+      x: number;
+      y: number;
+      content: string;
+    } | null>(null);
+
+    useEffect(() => {
+      const fg = fgRef.current;
+      if (!fg) return;
+
+      if (readyRef.current) return;
+      readyRef.current = true;
+
+      fg.d3Force('collision', forceCollide(80));
+    });
+
+    const handleNodeHover = useCallback((node: Node | null) => {
+      const graph = fgRef.current;
+      if (!graph) return;
+      hoveredRef.current = node;
+
+      if (node) {
+        const coords = graph.graph2ScreenCoords(node.x!, node.y!);
+        setTooltip({
+          x: coords.x + 4,
+          y: coords.y + 4,
+          content: node.description ?? 'No description',
+        });
+      } else {
+        setTooltip(null);
+      }
+    }, []);
+
+    // Custom node rendering: circle with text label below
+    const nodeCanvasObject: ForceGraphProps['nodeCanvasObject'] = (
+      node,
+      ctx,
+    ) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const style = getComputedStyle(container);
+      const fontSize = 14;
+      const radius = 5;
+
+      // Draw circle
+      ctx.beginPath();
+      ctx.arc(node.x!, node.y!, radius, 0, 2 * Math.PI, false);
+
+      const hoverNode = hoveredRef.current;
+      const isActive =
+        hoverNode?.id === node.id ||
+        hoverNode?.neighbors?.includes(node.id as string);
+
+      ctx.fillStyle = isActive
+        ? style.getPropertyValue('--color-fd-primary')
+        : style.getPropertyValue('--color-purple-300');
+      ctx.fill();
+
+      // Draw text below the node
+      ctx.font = `${fontSize}px Sans-Serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = getComputedStyle(container).getPropertyValue('color');
+      ctx.fillText(node.text, node.x!, node.y! + radius + fontSize);
+    };
+
+    const linkColor = useCallback(
+      (link: Link) => {
+        const container = containerRef.current;
+        if (!container) return '#999';
+        const style = getComputedStyle(container);
+        const hoverNode = hoveredRef.current;
+
+        if (
+          hoverNode &&
+          typeof link.source === 'object' &&
+          typeof link.target === 'object' &&
+          (hoverNode.id === link.source.id || hoverNode.id === link.target.id)
+        ) {
+          return style.getPropertyValue('--color-fd-primary');
+        }
+
+        return `color-mix(in oklab, ${style.getPropertyValue('--color-fd-foreground')} 40%, transparent)`;
+      },
+      [containerRef],
+    );
+
+    // Enrich nodes with neighbors for hover effects
+    const enrichedNodes = useMemo(() => {
+      const enrichedNodes = nodes.map((node) => ({
+        ...node,
+        neighbors: links.flatMap((link) => {
+          if (link.source === node.id) return link.target;
+          if (link.target === node.id) return link.source;
+          return [];
+        }),
+      }));
+
+      return { nodes: enrichedNodes as NodeType[], links };
+    }, [nodes, links]);
+
+    return (
+      <>
+        <ForceGraph2D<NodeType, LinkType>
+          ref={fgRef}
+          graphData={enrichedNodes}
+          nodeCanvasObject={nodeCanvasObject}
+          linkColor={linkColor}
+          onNodeHover={handleNodeHover}
+          linkWidth={2}
+          enableNodeDrag
+          enableZoomInteraction
+        />
+        {tooltip && (
+          <div
+            className="absolute bg-fd-popover text-fd-popover-foreground size-fit p-2 border rounded-xl shadow-lg text-sm max-w-xs"
+            style={{ top: tooltip.y, left: tooltip.x }}
+          >
+            {tooltip.content}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return {
+    default: Component,
+  };
+});
+
+export function GraphViewClient(props: GraphViewProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [mount, setMount] = useState(false);
+  useEffect(() => {
+    setMount(true);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="relative border h-[600px] [&_canvas]:size-full rounded-xl overflow-hidden"
+    >
+      {mount && <GraphViewLazy {...props} containerRef={ref} />}
+    </div>
+  );
+}
+
+```
+# Fumadocs Framework: Zoomable Image
+URL: /docs/ui/components/image-zoom
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/image-zoom.mdx
+
+Allow zoom-in images in your documentation
+        
+***
+
+title: Zoomable Image
+description: Allow zoom-in images in your documentation
+preview: zoomImage
+------------------
+
+<Installation name="image-zoom" />
+
+## Usage
+
+Replace `img` with `ImageZoom` in your MDX components.
+
+```tsx title="mdx-components.tsx"
+import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
+import defaultComponents from 'fumadocs-ui/mdx';
+import type { MDXComponents } from 'mdx/types';
+
+export function getMDXComponents(components?: MDXComponents): MDXComponents {
+  return {
+    ...defaultComponents,
+    img: (props) => <ImageZoom {...(props as any)} />,
+    ...components,
+  };
+}
+```
+
+Now image zoom will be automatically enabled on all images.
+
+```mdx
+![Test](/banner.png)
+```
+
+### Image Optimization
+
+On Next.js, a default [`sizes` property](https://nextjs.org/docs/app/api-reference/components/image#sizes) will be defined for `<Image />` component if not specified.
+# Fumadocs Framework: Inline TOC
+URL: /docs/ui/components/inline-toc
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/inline-toc.mdx
+
+Add Inline TOC into your documentation
+        
+***
+
+title: Inline TOC
+description: Add Inline TOC into your documentation
+preview: inlineTOC
+------------------
+
+<Installation name="inline-toc" />
+
+## Usage
+
+Pass TOC items to the component.
+
+```mdx
+import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
+
+<InlineTOC items={toc} />
+```
+
+### Use in Pages
+
+You can add inline TOC into every page.
+
+```tsx
+<DocsPage>
+  ...
+  <InlineTOC items={toc} />
+  ...
+</DocsPage>
+```
+
+## Reference
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="InlineTOCProps" />
+# Fumadocs Framework: Steps
+URL: /docs/ui/components/steps
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/steps.mdx
+
+Adding steps to your docs
+        
+***
+
+title: Steps
+description: Adding steps to your docs
+preview: steps
+--------------
+
+<Installation name="steps" />
+
+## Usage
+
+Put your steps into the `Steps` container.
+
+```mdx
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+<Steps>
+<Step>
+
+### Hello World
+
+</Step>
+
+<Step>
+
+### Hello World
+
+</Step>
+</Steps>
+```
+
+> We recommend using Tailwind CSS utility classes directly on Tailwind CSS projects.
+
+### Without imports
+
+You can use the Tailwind CSS utilities without importing it.
+
+```mdx
+<div className="fd-steps">
+  <div className="fd-step" />
+</div>
+```
+
+It supports adding step styles to only headings with arbitrary variants.
+
+```mdx
+<div className='fd-steps [&_h3]:fd-step'>
+
+### Hello World
+
+</div>
+```
+
+<div className="fd-steps [&_h3]:fd-step">
+  ### Hello World
+
+  You no longer need to use the step component anymore.
+</div>
+# Fumadocs Framework: Tabs
+URL: /docs/ui/components/tabs
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/tabs.mdx
+
+A Tabs component built with Radix UI, with additional features such as persistent and shared value.
+        
+***
+
+title: Tabs
+description:
+A Tabs component built with Radix UI, with additional features such as
+persistent and shared value.
+preview: tabs
+-------------
+
+<Installation name="tabs" />
+
+## Usage
+
+Add MDX components.
+
+```tsx title="mdx-components.tsx"
+import defaultMdxComponents from 'fumadocs-ui/mdx';
+import * as TabsComponents from 'fumadocs-ui/components/tabs';
+import type { MDXComponents } from 'mdx/types';
+
+export function getMDXComponents(components?: MDXComponents): MDXComponents {
+  return {
+    ...defaultMdxComponents,
+    ...TabsComponents, // [!code ++]
+    ...components,
+  };
+}
+```
+
+And use it like:
+
+```mdx
+<Tabs items={['Javascript', 'Rust']}>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+</Tabs>
+```
+
+<Tabs items={['Javascript', 'Rust']}>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+</Tabs>
+
+### Without `value`
+
+Without a `value`, it detects from the children index. Note that it might cause errors on re-renders, it's not encouraged if the tabs might change.
+
+```mdx
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+<Tabs items={['Javascript', 'Rust']}>
+  <Tab>Javascript is weird</Tab>
+  <Tab>Rust is fast</Tab>
+</Tabs>
+```
+
+<Tabs items={['Javascript', 'Rust']}>
+  <Tab>Javascript is weird</Tab>
+  <Tab>Rust is fast</Tab>
+</Tabs>
+
+### Shared Value
+
+By passing an `groupId` property, you can share a value across all tabs with the same
+id.
+
+```mdx
+<Tabs groupId="language" items={['Javascript', 'Rust']}>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+</Tabs>
+```
+
+### Persistent
+
+You can enable persistent by passing a `persist` property. The value will be
+stored in `localStorage`, with its id as the key.
+
+```mdx
+<Tabs groupId="language" items={['Javascript', 'Rust']} persist>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+</Tabs>
+```
+
+> Persistent only works if you have passed an `id`.
+
+### Default Value
+
+Set a default value by passing `defaultIndex`.
+
+```mdx
+<Tabs items={['Javascript', 'Rust']} defaultIndex={1}>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+</Tabs>
+```
+
+### Link to Tab
+
+Use HTML `id` attribute to link to a specific tab.
+
+```mdx
+<Tabs items={['Javascript', 'Rust', 'C++']}>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+  <Tab id="tab-cpp" value="C++">
+    `Hello World`
+  </Tab>
+</Tabs>
+```
+
+You can add the hash `#tab-cpp` to your URL and reload, the C++ tab will be activated.
+
+<Tabs items={['Javascript', 'Rust', 'C++']}>
+  <Tab value="Javascript">Javascript is weird</Tab>
+  <Tab value="Rust">Rust is fast</Tab>
+
+  <Tab id="tab-cpp" value="C++">
+    `Hello World`
+  </Tab>
+</Tabs>
+
+Additionally, the `updateAnchor` property can be set to `true` in the `Tabs` component
+to automatically update the URL hash whenever time a new tab is selected:
+
+```mdx
+<Tabs items={['Javascript', 'Rust', 'C++']} updateAnchor>
+  <Tab id="tab-js" value="Javascript">
+    Javascript is weird
+  </Tab>
+  <Tab id="tab-rs" value="Rust">
+    Rust is fast
+  </Tab>
+  <Tab id="tab-cpp" value="C++">
+    `Hello World`
+  </Tab>
+</Tabs>
+```
+
+<UrlBar />
+
+<Tabs items={['Hello', 'World']} updateAnchor>
+  <Tab id="tab-hello" value="Hello">
+    Hello!
+  </Tab>
+
+  <Tab id="tab-world" value="World">
+    World!
+  </Tab>
+</Tabs>
+
+## Advanced Usage
+
+Use it in the Radix UI primitive way, see [Radix UI](https://radix-ui.com/primitives/docs/components/tabs) for more details.
+
+```mdx
+<Tabs defaultValue="npm">
+  <TabsList>
+    <TabsTrigger value="npm">
+      <NpmIcon />
+      npm
+    </TabsTrigger>
+  </TabsList>
+  <TabsContent value="npm">Hello World</TabsContent>
+</Tabs>
+```
+
+<Tabs defaultValue="npm">
+  <TabsList>
+    <TabsTrigger value="npm">
+      <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <title>npm</title>
+
+        <path fill="currentColor" d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z" />
+      </svg>
+
+      npm
+    </TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="npm">Hello World</TabsContent>
+</Tabs>
+# Fumadocs Framework: Type Table
+URL: /docs/ui/components/type-table
+Source: https://raw.githubusercontent.com/fuma-nama/fumadocs/refs/heads/main/apps/docs/content/docs/ui/components/type-table.mdx
+
+A table for documenting types
+        
+***
+
+title: Type Table
+description: A table for documenting types
+preview: typeTable
+------------------
+
+<Installation name="type-table" />
+
+## Usage
+
+It accepts a `type` property.
+
+```mdx
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+<TypeTable
+  type={{
+    percentage: {
+      description:
+        'The percentage of scroll position to display the roll button',
+      type: 'number',
+      default: 0.2,
+    },
+  }}
+/>
+```
+
+## References
+
+### Type Table
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="TypeTableProps" />
+
+### Object Type
+
+<AutoTypeTable path="./content/docs/ui/props.ts" name="ObjectTypeProps" />
+
+

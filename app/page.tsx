@@ -389,7 +389,7 @@ function HomePage() {
 
     try {
       const slug = createSlug(localTitle, savedRuleId)
-      const imageUrl = `${window.location.origin}/rule/${slug}/opengraph-image`
+      const imageUrl = `${window.location.origin}/rule/${slug}/preview-image`
       
       // Fetch the image
       const response = await fetch(imageUrl)

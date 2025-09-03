@@ -52,7 +52,7 @@ export const auth = betterAuth({
 
         try {
           await inbound.emails.send({
-            from: "Cursor Link <auth@cursor.link>",
+            from: process.env.NODE_ENV === 'development' ? "Cursor Link <agent@inbnd.dev>" : "Cursor Link <auth@cursor.link>",
             to: email,
             subject: "Sign in to Cursor Link",
             html: `
