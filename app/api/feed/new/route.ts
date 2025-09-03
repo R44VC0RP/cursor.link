@@ -1,12 +1,31 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cursorRule, user } from "@/lib/schema"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, or, ilike, and } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch newest public rules
-    const rules = await db
+    const { searchParams } = new URL(request.url)
+    const searchQuery = searchParams.get('q')
+
+    // Build where condition
+    let whereCondition
+    
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = `%${searchQuery.trim()}%`
+      whereCondition = and(
+        eq(cursorRule.isPublic, true),
+        or(
+          ilike(cursorRule.title, searchTerm),
+          ilike(cursorRule.content, searchTerm),
+          ilike(user.name, searchTerm)
+        )
+      )!
+    } else {
+      whereCondition = eq(cursorRule.isPublic, true)
+    }
+
+    let query = db
       .select({
         id: cursorRule.id,
         title: cursorRule.title,
@@ -21,7 +40,10 @@ export async function GET(request: NextRequest) {
       })
       .from(cursorRule)
       .innerJoin(user, eq(cursorRule.userId, user.id))
-      .where(eq(cursorRule.isPublic, true))
+      .where(whereCondition)
+
+    // Fetch newest public rules (with optional search)
+    const rules = await query
       .orderBy(desc(cursorRule.createdAt))
       .limit(50)
 

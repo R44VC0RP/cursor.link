@@ -120,6 +120,10 @@ export default function DashboardPage() {
   const [nameInput, setNameInput] = useState("")
   const [showNamePrompt, setShowNamePrompt] = useState(false)
   const [isUpdatingName, setIsUpdatingName] = useState(false)
+  const [selectedRules, setSelectedRules] = useState<Set<string>>(new Set())
+  const [showListDialog, setShowListDialog] = useState(false)
+  const [availableLists, setAvailableLists] = useState<Array<{id: string, title: string}>>([])
+  const [isAddingToList, setIsAddingToList] = useState(false)
 
   // Helper function to show checkmark feedback
   const showActionFeedback = (actionKey: string) => {
@@ -127,6 +131,109 @@ export default function DashboardPage() {
     setTimeout(() => {
       setActionStates(prev => ({ ...prev, [actionKey]: false }))
     }, 1500)
+  }
+
+  // Helper functions for rule selection
+  const toggleRuleSelection = (ruleId: string) => {
+    setSelectedRules(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(ruleId)) {
+        newSet.delete(ruleId)
+      } else {
+        newSet.add(ruleId)
+      }
+      return newSet
+    })
+  }
+
+  const selectAllRules = () => {
+    setSelectedRules(new Set(rules.map(rule => rule.id)))
+  }
+
+  const clearSelection = () => {
+    setSelectedRules(new Set())
+  }
+
+  const isRuleSelected = (ruleId: string) => {
+    return selectedRules.has(ruleId)
+  }
+
+  // Fetch available lists for adding rules
+  const fetchAvailableLists = async () => {
+    try {
+      const response = await fetch('/api/lists')
+      if (response.ok) {
+        const lists = await response.json()
+        setAvailableLists(lists.map((list: any) => ({ id: list.id, title: list.title })))
+      }
+    } catch (error) {
+      console.error('Error fetching lists:', error)
+    }
+  }
+
+  // Handle adding selected rules to a list
+  const handleAddSelectedToList = async (listId: string) => {
+    if (selectedRules.size === 0) return
+
+    setIsAddingToList(true)
+    try {
+      const promises = Array.from(selectedRules).map(ruleId =>
+        fetch(`/api/lists/${listId}/rules`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ruleId })
+        })
+      )
+
+      const results = await Promise.allSettled(promises)
+      const successful = results.filter(result => result.status === 'fulfilled').length
+      const failed = results.length - successful
+
+      if (successful > 0) {
+        toast.success(`Added ${successful} rule${successful !== 1 ? 's' : ''} to list!`)
+        track("Rules Added to List", { count: successful, listId })
+      }
+      if (failed > 0) {
+        toast.error(`Failed to add ${failed} rule${failed !== 1 ? 's' : ''} (may already be in list)`)
+      }
+
+      setShowListDialog(false)
+      clearSelection()
+    } catch (error) {
+      console.error('Error adding rules to list:', error)
+      toast.error('Failed to add rules to list')
+    } finally {
+      setIsAddingToList(false)
+    }
+  }
+
+  // Handle deleting selected rules
+  const handleDeleteSelected = async () => {
+    if (selectedRules.size === 0) return
+
+    try {
+      const promises = Array.from(selectedRules).map(ruleId =>
+        fetch('/api/cursor-rules', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: ruleId })
+        })
+      )
+
+      const results = await Promise.allSettled(promises)
+      const successful = results.filter(result => result.status === 'fulfilled').length
+
+      if (successful > 0) {
+        // Remove successfully deleted rules from local state
+        setRules(prevRules => prevRules.filter(rule => !selectedRules.has(rule.id)))
+        toast.success(`Deleted ${successful} rule${successful !== 1 ? 's' : ''}!`)
+        track("Rules Deleted", { count: successful })
+        clearSelection()
+      }
+    } catch (error) {
+      console.error('Error deleting rules:', error)
+      toast.error('Failed to delete rules')
+    }
   }
 
   // Check if user needs to set their name
@@ -305,6 +412,7 @@ export default function DashboardPage() {
 
     if (session) {
       fetchRules()
+      fetchAvailableLists()
     }
   }, [session])
 
@@ -390,9 +498,129 @@ export default function DashboardPage() {
           {/* User Lists Section */}
           <UserLists />
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-white">Your Cursor Rules</h2>
-            <div className="text-sm text-gray-400">
-              {rulesLoading ? "Loading..." : `${rules.length} rule${rules.length !== 1 ? 's' : ''}`}
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-medium text-white">Your Cursor Rules</h2>
+              <div className="text-sm text-gray-400">
+                {rulesLoading ? "Loading..." : `${rules.length} rule${rules.length !== 1 ? 's' : ''}`}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {!rulesLoading && rules.length > 0 && (
+                <>
+                  <button
+                    onClick={selectedRules.size === rules.length ? clearSelection : selectAllRules}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-white/10 transition-colors text-xs text-gray-400 hover:text-white"
+                    title={selectedRules.size === rules.length ? 'Deselect all rules' : 'Select all rules'}
+                  >
+                    <div className="flex items-center justify-center w-3.5 h-3.5 rounded border border-white/20 hover:border-white/40 transition-colors"
+                         style={{
+                           backgroundColor: selectedRules.size === rules.length ? '#70A7D7' : 'transparent'
+                         }}>
+                      {selectedRules.size === rules.length && (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 18 18">
+                          <g fill="white">
+                            <path d="M9 1.5C4.86 1.5 1.5 4.86 1.5 9C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9C16.5 4.86 13.14 1.5 9 1.5ZM7.5 12.75L3.75 9L5.16 7.59L7.5 9.93L12.84 4.59L14.25 6L7.5 12.75Z"/>
+                          </g>
+                        </svg>
+                      )}
+                    </div>
+                    {selectedRules.size === rules.length ? 'Deselect All' : 'Select All'}
+                  </button>
+
+                  <span className={`text-xs ${selectedRules.size > 0 ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {selectedRules.size} selected
+                  </span>
+                  
+                  <button
+                    onClick={() => selectedRules.size > 0 && setShowListDialog(true)}
+                    disabled={selectedRules.size === 0}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-colors text-xs ${
+                      selectedRules.size > 0 
+                        ? 'hover:bg-white/10 text-gray-400' 
+                        : 'text-gray-600 cursor-not-allowed opacity-50'
+                    }`}
+                    title={selectedRules.size > 0 ? "Add selected rules to list" : "Select rules to add to list"}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 18 18">
+                      <title>ballot-rect</title>
+                      <g fill={selectedRules.size > 0 ? "#70A7D7" : "#6B7280"}>
+                        <path opacity="0.4" d="M10.2501 6H15.2501C15.6641 6 16.0001 5.664 16.0001 5.25C16.0001 4.836 15.6641 4.5 15.2501 4.5H10.2501C9.83612 4.5 9.50012 4.836 9.50012 5.25C9.50012 5.664 9.83612 6 10.2501 6Z"></path>
+                        <path opacity="0.4" d="M15.2501 12H10.2501C9.83612 12 9.50012 12.336 9.50012 12.75C9.50012 13.164 9.83612 13.5 10.2501 13.5H15.2501C15.6641 13.5 16.0001 13.164 16.0001 12.75C16.0001 12.336 15.6641 12 15.2501 12Z"></path>
+                        <path d="M6.25012 2H3.75012C2.78362 2 2.00012 2.7835 2.00012 3.75V6.25C2.00012 7.2165 2.78362 8 3.75012 8H6.25012C7.21662 8 8.00012 7.2165 8.00012 6.25V3.75C8.00012 2.7835 7.21662 2 6.25012 2Z"></path>
+                        <path d="M6.25012 10H3.75012C2.78362 10 2.00012 10.7835 2.00012 11.75V14.25C2.00012 15.2165 2.78362 16 3.75012 16H6.25012C7.21662 16 8.00012 15.2165 8.00012 14.25V11.75C8.00012 10.7835 7.21662 10 6.25012 10Z"></path>
+                      </g>
+                    </svg>
+                    Add to List
+                  </button>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button
+                        disabled={selectedRules.size === 0}
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-colors text-xs group ${
+                          selectedRules.size > 0 
+                            ? 'hover:bg-red-500/10 text-red-500' 
+                            : 'text-gray-600 cursor-not-allowed opacity-50'
+                        }`}
+                        title={selectedRules.size > 0 ? "Delete selected rules" : "Select rules to delete"}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 18 18">
+                          <title>trash-2</title>
+                          <g fill={selectedRules.size > 0 ? "#EF4444" : "#6B7280"} className={selectedRules.size > 0 ? "group-hover:fill-red-400" : ""}>
+                            <path opacity="0.4" d="M3.40771 5L3.90253 14.3892C3.97873 15.8531 5.18472 17 6.64862 17H11.3527C12.8166 17 14.0226 15.853 14.0988 14.3896L14.5936 5H3.40771Z"></path>
+                            <path d="M7.37407 14.0001C6.98007 14.0001 6.64908 13.69 6.62608 13.2901L6.37608 8.7901C6.35408 8.3801 6.67008 8.02006 7.08308 8.00006C7.48908 7.98006 7.85107 8.29002 7.87407 8.71002L8.12407 13.21C8.14707 13.62 7.83007 13.9801 7.41707 14.0001H7.37407Z"></path>
+                            <path d="M10.6261 14.0001H10.5831C10.1701 13.9801 9.85408 13.62 9.87608 13.21L10.1261 8.71002C10.1491 8.29012 10.4981 7.98006 10.9171 8.00006C11.3301 8.02006 11.6471 8.3801 11.6241 8.7901L11.3741 13.2901C11.3521 13.69 11.0211 14.0001 10.6261 14.0001Z"></path>
+                            <path d="M15.25 4H12V2.75C12 1.7852 11.2148 1 10.25 1H7.75C6.7852 1 6 1.7852 6 2.75V4H2.75C2.3359 4 2 4.3359 2 4.75C2 5.1641 2.3359 5.5 2.75 5.5H15.25C15.6641 5.5 16 5.1641 16 4.75C16 4.3359 15.6641 4 15.25 4ZM7.5 2.75C7.5 2.6143 7.6143 2.5 7.75 2.5H10.25C10.3857 2.5 10.5 2.6143 10.5 2.75V4H7.5V2.75Z"></path>
+                          </g>
+                        </svg>
+                        Delete
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-[#1B1D21] border-white/10 text-white">
+                      <DialogHeader>
+                        <DialogTitle>Delete Selected Rules</DialogTitle>
+                        <DialogDescription className="text-gray-400">
+                          Are you sure you want to delete {selectedRules.size} rule{selectedRules.size !== 1 ? 's' : ''}? This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter className="gap-2">
+                        <DialogTrigger asChild>
+                          <Button variant="secondary" size="sm">
+                            Cancel
+                          </Button>
+                        </DialogTrigger>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="primary" 
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={handleDeleteSelected}
+                          >
+                            Delete {selectedRules.size} Rule{selectedRules.size !== 1 ? 's' : ''}
+                          </Button>
+                        </DialogTrigger>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <button
+                    onClick={clearSelection}
+                    disabled={selectedRules.size === 0}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-colors text-xs ${
+                      selectedRules.size > 0 
+                        ? 'hover:bg-white/10 text-gray-400' 
+                        : 'text-gray-600 cursor-not-allowed opacity-50'
+                    }`}
+                    title={selectedRules.size > 0 ? "Clear selection" : "No selection to clear"}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={selectedRules.size > 0 ? "#70A7D7" : "#6B7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6L6 18"/>
+                      <path d="M6 6l12 12"/>
+                    </svg>
+                    Clear
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -429,13 +657,25 @@ export default function DashboardPage() {
                       {/* Left side - Rule info */}
                       <div className="flex items-start gap-2 flex-1 min-w-0">
                         <div className="flex-shrink-0 mt-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-                            <title>compose-3</title>
-                            <g fill="#70A7D7">
-                              <path d="M4.75 2C3.23079 2 2 3.23079 2 4.75V13.25C2 14.7692 3.23079 16 4.75 16H13.25C14.7692 16 16 14.7692 16 13.25V4.75C16 3.23079 14.7692 2 13.25 2H4.75Z" fillOpacity="0.4"></path>
-                              <path d="M16.9203 2.10469C17.0492 1.86207 17.0351 1.56839 16.8836 1.33921C16.7321 1.11003 16.4674 0.982029 16.1937 1.00558C11.5935 1.40129 8.92498 3.89611 7.4184 6.37012C5.92835 8.817 5.56482 11.2509 5.50782 11.6418C5.44806 12.0517 5.73189 12.4324 6.14177 12.4922C6.55165 12.5519 6.93237 12.2681 6.99213 11.8582C7.01886 11.6749 7.13344 10.9067 7.4627 9.88243C7.66774 9.9158 7.87256 9.95107 8.0774 9.98635C8.4907 10.0575 8.90407 10.1287 9.31953 10.1844C10.5757 10.3525 11.9097 10.3279 13.0091 9.81425C13.5291 9.57128 13.9762 9.22841 14.3298 8.77989C13.2293 8.62136 12.2835 8.05888 11.85 7.70001C12.627 7.70001 13.4396 7.66594 14.154 7.45121C14.5836 7.32212 14.9751 7.12566 15.3021 6.84819C15.7633 6.45675 16.0878 5.89944 16.2221 5.3104C16.3331 4.82343 16.4123 4.32551 16.4827 3.88323C16.5104 3.70902 16.5367 3.54344 16.5631 3.39056C16.6634 2.80913 16.7659 2.39542 16.9203 2.10469Z"></path>
-                            </g>
-                          </svg>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleRuleSelection(rule.id)
+                            }}
+                            className="flex items-center justify-center w-4 h-4 rounded border border-white/20 hover:border-white/40 transition-colors"
+                            style={{
+                              backgroundColor: isRuleSelected(rule.id) ? '#70A7D7' : 'transparent'
+                            }}
+                            title={isRuleSelected(rule.id) ? 'Deselect rule' : 'Select rule'}
+                          >
+                            {isRuleSelected(rule.id) && (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 18 18">
+                                <g fill="white">
+                                  <path d="M9 1.5C4.86 1.5 1.5 4.86 1.5 9C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9C16.5 4.86 13.14 1.5 9 1.5ZM7.5 12.75L3.75 9L5.16 7.59L7.5 9.93L12.84 4.59L14.25 6L7.5 12.75Z"/>
+                                </g>
+                              </svg>
+                            )}
+                          </button>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -666,6 +906,56 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* List Selection Dialog */}
+      <Dialog open={showListDialog} onOpenChange={setShowListDialog}>
+        <DialogContent className="bg-[#1B1D21] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle>Add Rules to List</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Select a list to add {selectedRules.size} rule{selectedRules.size !== 1 ? 's' : ''} to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {availableLists.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-400 text-sm">No lists available. Create a list first.</p>
+              </div>
+            ) : (
+              availableLists.map((list) => (
+                <button
+                  key={list.id}
+                  onClick={() => handleAddSelectedToList(list.id)}
+                  disabled={isAddingToList}
+                  className="w-full p-3 text-left rounded-lg border border-white/10 hover:border-white/20 hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 18 18">
+                      <title>ballot-rect</title>
+                      <g fill="#70A7D7">
+                        <path opacity="0.4" d="M10.2501 6H15.2501C15.6641 6 16.0001 5.664 16.0001 5.25C16.0001 4.836 15.6641 4.5 15.2501 4.5H10.2501C9.83612 4.5 9.50012 4.836 9.50012 5.25C9.50012 5.664 9.83612 6 10.2501 6Z"></path>
+                        <path opacity="0.4" d="M15.2501 12H10.2501C9.83612 12 9.50012 12.336 9.50012 12.75C9.50012 13.164 9.83612 13.5 10.2501 13.5H15.2501C15.6641 13.5 16.0001 13.164 16.0001 12.75C16.0001 12.336 15.6641 12 15.2501 12Z"></path>
+                        <path d="M6.25012 2H3.75012C2.78362 2 2.00012 2.7835 2.00012 3.75V6.25C2.00012 7.2165 2.78362 8 3.75012 8H6.25012C7.21662 8 8.00012 7.2165 8.00012 6.25V3.75C8.00012 2.7835 7.21662 2 6.25012 2Z"></path>
+                        <path d="M6.25012 10H3.75012C2.78362 10 2.00012 10.7835 2.00012 11.75V14.25C2.00012 15.2165 2.78362 16 3.75012 16H6.25012C7.21662 16 8.00012 15.2165 8.00012 14.25V11.75C8.00012 10.7835 7.21662 10 6.25012 10Z"></path>
+                      </g>
+                    </svg>
+                    <span className="text-white font-medium">{list.title}</span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowListDialog(false)}
+              className="border-white/10 bg-transparent hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
