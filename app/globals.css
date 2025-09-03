@@ -76,6 +76,20 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* Fumadocs theme variables */
+:root {
+  --color-fd-primary: #70A7D7;
+  --color-fd-background: var(--background);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-muted: var(--muted);
+  --color-fd-accent: var(--accent);
+  --radius-fd: var(--radius);
+}
+
+.dark {
+  --color-fd-primary: #8BB8E8;
+}
+
 /* Added SF Pro Display font family configuration */
 @theme inline {
   --font-sans: "SF Pro Display", "SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
