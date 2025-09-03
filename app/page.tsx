@@ -5,13 +5,14 @@ import { useQueryState } from "nuqs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Copy, Download, Share2, ChevronDown, Save, User, ChevronUp, Image } from "lucide-react"
+import { Copy, Download, Share2, ChevronDown, Save, User, ChevronUp, Image, Loader2 } from "lucide-react"
 import { countTokens } from "gpt-tokenizer"
 import { Header } from "@/components/header"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { track } from "@vercel/analytics"
 
 function HomePage() {
@@ -47,6 +48,7 @@ function HomePage() {
 
   const [isShared, setIsShared] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCopyingImage, setIsCopyingImage] = useState(false)
   const [savedRuleId, setSavedRuleId] = useState<string | null>(urlEditId || null)
   const [isPublic, setIsPublic] = useState(urlIsPublic === "true")
   const [tokenCount, setTokenCount] = useState(0)
@@ -62,7 +64,28 @@ function HomePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cursorPositionRef = useRef<number>(0)
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const autoDetectionAppliedRef = useRef<boolean>(false)
+
+  // Begin sign-in with return to current page and pending action
+  const beginSignInWithReturn = useCallback((action: 'save' | 'share' | 'copyCLI' | 'copyURL' | 'copyImage') => {
+    try {
+      const pendingState = JSON.stringify({
+        title: localTitle,
+        content: localContent,
+        ruleType: selectedRule,
+        editId: savedRuleId,
+        isPublic,
+      })
+      localStorage.setItem('cursorlink:pendingEditorState', pendingState)
+      localStorage.setItem('cursorlink:pendingAction', action)
+    } catch (err) {
+      console.error('Failed to persist pending editor state:', err)
+    }
+
+    const nextUrl = typeof window !== 'undefined' ? window.location.href : '/'
+    window.location.href = `/login?next=${encodeURIComponent(nextUrl)}`
+  }, [localTitle, localContent, selectedRule, savedRuleId, isPublic])
 
   const ruleOptions = [
     {
@@ -113,7 +136,83 @@ function HomePage() {
     if (urlEditId && isRulePublic) {
       setIsShared(true)
     }
+
+    // On return from login, restore pending editor state and perform pending action
+    try {
+      const stored = localStorage.getItem('cursorlink:pendingEditorState')
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (typeof data?.title === 'string') {
+          setLocalTitle(data.title)
+          setUrlTitle(data.title)
+        }
+        if (typeof data?.content === 'string') {
+          setLocalContent(data.content)
+          setUrlContent(data.content)
+        }
+        if (typeof data?.ruleType === 'string') {
+          setSelectedRule(data.ruleType)
+          setUrlRuleType(data.ruleType)
+        }
+        if (typeof data?.editId === 'string') {
+          setSavedRuleId(data.editId)
+          setUrlEditId(data.editId)
+        }
+        if (typeof data?.isPublic === 'boolean') {
+          setIsPublic(data.isPublic)
+          setUrlIsPublic(data.isPublic ? 'true' : 'false')
+        }
+        localStorage.removeItem('cursorlink:pendingEditorState')
+      }
+
+      const pendingAction = localStorage.getItem('cursorlink:pendingAction') as ('save' | 'share' | 'copyCLI' | 'copyURL' | 'copyImage' | null)
+      if (pendingAction && session) {
+        localStorage.removeItem('cursorlink:pendingAction')
+        // Defer action slightly to ensure state applied
+        setTimeout(() => {
+          switch (pendingAction) {
+            case 'save':
+              handleSave()
+              break
+            case 'share':
+              handleShare()
+              break
+            case 'copyCLI':
+              handleCopyCLI()
+              break
+            case 'copyURL':
+              handleCopyViewURL()
+              break
+            case 'copyImage':
+              handleCopyPreviewImage()
+              break
+          }
+        }, 50)
+      }
+    } catch (err) {
+      console.error('Failed to restore pending editor state:', err)
+    }
   }, [urlEditId, urlIsPublic])
+
+  const autoUpdateRule = useCallback(async () => {
+    if (!session || !savedRuleId || !localTitle.trim() || !localContent.trim()) return
+
+    try {
+      await fetch('/api/cursor-rules', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: savedRuleId,
+          title: localTitle,
+          content: localContent,
+          ruleType: selectedRule,
+          isPublic: isPublic,
+        })
+      })
+    } catch (error) {
+      console.error('Auto update failed:', error)
+    }
+  }, [session, savedRuleId, localTitle, localContent, selectedRule, isPublic])
 
   // Debounced URL update for title with sanitization
   const handleTitleChange = useCallback((value: string) => {
@@ -135,7 +234,17 @@ function HomePage() {
     updateTimerRef.current = setTimeout(() => {
       setUrlTitle(sanitizedValue)
     }, 500)
-  }, [setUrlTitle])
+
+    // Debounced auto-update for existing rules
+    if (savedRuleId) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoUpdateRule()
+      }, 1000)
+    }
+  }, [setUrlTitle, savedRuleId, autoUpdateRule])
 
   // Handle content change with local state
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -183,7 +292,17 @@ function HomePage() {
     updateTimerRef.current = setTimeout(() => {
       setUrlContent(value)
     }, 500)
-  }, [setUrlContent, selectedRule, ruleOptions])
+    
+    // Debounced auto-update for existing rules
+    if (savedRuleId) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoUpdateRule()
+      }, 1000)
+    }
+  }, [setUrlContent, selectedRule, ruleOptions, savedRuleId, autoUpdateRule])
 
   // Restore cursor position after content updates
   useEffect(() => {
@@ -198,6 +317,9 @@ function HomePage() {
     return () => {
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current)
+      }
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
       }
     }
   }, [])
@@ -314,9 +436,19 @@ function HomePage() {
   }
 
   const handleShare = async () => {
-    if (!session || !savedRuleId) return
+    if (!session) {
+      beginSignInWithReturn('share')
+      return
+    }
+    if (!savedRuleId) return
 
     try {
+      // Clear any pending auto-save before sharing
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+        autoSaveTimerRef.current = null
+      }
+
       // Update rule to be public
       await fetch('/api/cursor-rules', {
         method: 'PUT',
@@ -354,7 +486,42 @@ function HomePage() {
     }
   }
 
+  const handleUpdate = async () => {
+    if (!session || !savedRuleId || !localTitle.trim() || !localContent.trim()) return
+
+    // Clear any pending auto-save to avoid duplicate writes
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+      autoSaveTimerRef.current = null
+    }
+
+    setIsSaving(true)
+    try {
+      await fetch('/api/cursor-rules', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: savedRuleId,
+          title: localTitle,
+          content: localContent,
+          ruleType: selectedRule,
+          isPublic: isPublic,
+        })
+      })
+      toast.success("Rule updated!")
+    } catch (error) {
+      console.error('Error updating rule:', error)
+      toast.error("Failed to update rule")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleCopyCLI = async () => {
+    if (!session) {
+      beginSignInWithReturn('copyCLI')
+      return
+    }
     if (!savedRuleId) {
       toast.error("Please save the rule first")
       return
@@ -369,7 +536,11 @@ function HomePage() {
   }
 
   const handleCopyViewURL = async () => {
-    if (!session || !savedRuleId) {
+    if (!session) {
+      beginSignInWithReturn('copyURL')
+      return
+    }
+    if (!savedRuleId) {
       toast.error("Please save the rule first")
       return
     }
@@ -382,12 +553,17 @@ function HomePage() {
   }
 
   const handleCopyPreviewImage = async () => {
-    if (!session || !savedRuleId) {
+    if (!session) {
+      beginSignInWithReturn('copyImage')
+      return
+    }
+    if (!savedRuleId) {
       toast.error("Please save the rule first")
       return
     }
 
     try {
+      setIsCopyingImage(true)
       const slug = createSlug(localTitle, savedRuleId)
       const imageUrl = `${window.location.origin}/rule/${slug}/preview-image`
       
@@ -410,6 +586,8 @@ function HomePage() {
     } catch (error) {
       console.error('Error copying image:', error)
       toast.error("Failed to copy preview image")
+    } finally {
+      setIsCopyingImage(false)
     }
   }
 
@@ -479,6 +657,16 @@ function HomePage() {
     }
     setIsDropdownOpen(false)
     track("Rule Type Changed", { ruleType: ruleId })
+
+    // Auto-update after rule type change if editing an existing rule
+    if (savedRuleId) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoUpdateRule()
+      }, 500)
+    }
   }
 
   return (
@@ -634,80 +822,83 @@ UI and Styling
                       <Save className="h-3 w-3" />
                       <span className="hidden md:inline ml-1">{isSaving ? "..." : "Save"}</span>
                     </Button>
-                  ) : !isPublic ? (
-                    <Button
-                      onClick={handleShare}
-                      disabled={!localTitle.trim() || !localContent.trim()}
-                      variant="primary"
-                      size="sm"
-                      className="hover:bg-[#90BAE0] min-w-[32px] sm:min-w-[64px] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
-                    >
-                      <Share2 className="h-3 w-3" />
-                      <span className="hidden md:inline ml-1">Share</span>
-                    </Button>
-                  ) : null}
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handleUpdate}
+                        disabled={!localTitle.trim() || !localContent.trim() || isSaving}
+                        variant="primary"
+                        size="sm"
+                        className="hover:bg-[#90BAE0] min-w-[32px] sm:min-w-[64px] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                      >
+                        <Save className="h-3 w-3" />
+                        <span className="hidden md:inline ml-1">{isSaving ? "..." : "Update"}</span>
+                      </Button>
+
+                      {!isPublic && (
+                        <Button
+                          onClick={handleShare}
+                          disabled={!localTitle.trim() || !localContent.trim()}
+                          variant="primary"
+                          size="sm"
+                          className="hover:bg-[#90BAE0] min-w-[32px] sm:min-w-[64px] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                        >
+                          <Share2 className="h-3 w-3" />
+                          <span className="hidden md:inline ml-1">Share</span>
+                        </Button>
+                      )}
+                    </>
+                  )}
 
                   {savedRuleId && (
                     <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={isPublic ? handleCopyCLI : undefined}
-                            disabled={!isPublic}
-                            variant="primary"
-                            size="sm"
-                            className={`hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto ${!isPublic ? "opacity-50" : ""}`}
-                          >
-                            <Copy className="h-3 w-3" />
-                            <span className="hidden md:inline ml-1">CLI</span>
-                          </Button>
-                        </TooltipTrigger>
-                        {!isPublic && (
-                          <TooltipContent>
-                            <p>Share first</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={isPublic ? handleCopyViewURL : undefined}
-                            disabled={!isPublic}
-                            variant="primary"
-                            size="sm"
-                            className={`hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto ${!isPublic ? "opacity-50" : ""}`}
-                          >
-                            <Share2 className="h-3 w-3" />
-                            <span className="hidden md:inline ml-1">URL</span>
-                          </Button>
-                        </TooltipTrigger>
-                        {!isPublic && (
-                          <TooltipContent>
-                            <p>Share first</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={isPublic ? handleCopyPreviewImage : undefined}
-                            disabled={!isPublic}
-                            variant="primary"
-                            size="sm"
-                            className={`hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto ${!isPublic ? "opacity-50" : ""}`}
-                          >
-                            <Image className="h-3 w-3" />
-                            <span className="hidden md:inline ml-1">Image</span>
-                          </Button>
-                        </TooltipTrigger>
-                        {!isPublic && (
-                          <TooltipContent>
-                            <p>Share first</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
+                      {isPublic && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"
+                            >
+                              <Copy className="h-3 w-3" />
+                              <span className="hidden md:inline ml-1">Copy</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-28 p-1 bg-[#1B1D21] border border-white/10" align="center">
+                            <div className="space-y-1">
+                              <button
+                                onClick={() => { handleCopyViewURL() }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors text-left rounded-sm"
+                              >
+                                <Share2 className="h-3 w-3 text-[#70A7D7]" />
+                                URL
+                              </button>
+                              <button
+                                onClick={() => { handleCopyCLI() }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors text-left rounded-sm"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#70A7D7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="4,17 10,11 4,5"/>
+                                  <line x1="12" y1="19" x2="20" y2="19"/>
+                                </svg>
+                                CLI
+                              </button>
+                              <button
+                                onClick={() => { if (!isCopyingImage) handleCopyPreviewImage() }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors text-left rounded-sm"
+                                disabled={isCopyingImage}
+                              >
+                                {isCopyingImage ? (
+                                  <Loader2 className="h-3 w-3 text-[#70A7D7] animate-spin" />
+                                ) : (
+                                  <Image className="h-3 w-3 text-[#70A7D7]" />
+                                )}
+                                Image
+                              </button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
 
                       <Button
                         onClick={handleClone}
@@ -728,7 +919,7 @@ UI and Styling
                 </>
               ) : (
                 <Button
-                  onClick={() => window.location.href = '/login'}
+                  onClick={() => beginSignInWithReturn('save')}
                   variant="primary"
                   size="sm"
                   className="hover:bg-[#90BAE0] px-2 py-2 sm:px-3 sm:py-1 aspect-square sm:aspect-auto"

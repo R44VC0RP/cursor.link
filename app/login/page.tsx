@@ -3,7 +3,7 @@
 import { MagicLinkForm } from "@/components/auth/magic-link-form"
 import { Header } from "@/components/header"
 import { useSession } from "@/lib/auth-client"
-import { redirect } from "next/navigation"
+import { redirect, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 function LoginSkeleton() {
@@ -54,6 +54,8 @@ export default function LoginPage() {
   const { data: session, isPending } = useSession()
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [sentEmail, setSentEmail] = useState("")
+  const searchParams = useSearchParams()
+  const nextParam = searchParams?.get('next') || '/'
 
   // Show skeleton while loading
   if (isPending) {
@@ -62,7 +64,7 @@ export default function LoginPage() {
 
   // Redirect to home if already logged in (but not if we just sent a magic link)
   if (session && !magicLinkSent) {
-    return redirect('/')
+    return redirect(nextParam)
   }
 
   const handleMagicLinkSent = (email: string) => {
