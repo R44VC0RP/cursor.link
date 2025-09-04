@@ -35,8 +35,10 @@ export async function pushCommand(options: PushOptions) {
     }
 
     if (localRules.length === 0) {
-      console.log(chalk.yellow('⚠️  No cursor rules found in .cursor/rules/'));
-      console.log(chalk.gray('Make sure you have .mdc files in your .cursor/rules/ directory.'));
+      console.log(chalk.yellow('⚠️  No cursor rules or commands found'));
+      console.log(chalk.gray('Make sure you have:'));
+      console.log(chalk.gray('  • .mdc files in your .cursor/rules/ directory, or'));
+      console.log(chalk.gray('  • .md files in your .cursor/commands/ directory'));
       return;
     }
 
@@ -135,6 +137,7 @@ export async function pushCommand(options: PushOptions) {
         const ruleData = {
           title: localRule.title,
           content: localRule.content,
+          type: localRule.type,
           ruleType: localRule.ruleType,
           isPublic: options.public || false,
         };

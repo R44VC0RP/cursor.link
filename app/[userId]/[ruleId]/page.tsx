@@ -15,6 +15,7 @@ interface CursorRule {
   id: string
   title: string
   content: string
+  type: string
   ruleType: string
   views: number
   createdAt: string

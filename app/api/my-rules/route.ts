@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         id: cursorRule.id,
         title: cursorRule.title,
         content: cursorRule.content,
+        type: cursorRule.type,
         ruleType: cursorRule.ruleType,
         isPublic: cursorRule.isPublic,
         views: cursorRule.views,

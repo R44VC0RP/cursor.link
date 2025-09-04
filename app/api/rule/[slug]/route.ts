@@ -81,6 +81,7 @@ export async function GET(
         id: cursorRule.id,
         title: cursorRule.title,
         content: cursorRule.content,
+        type: cursorRule.type,
         ruleType: cursorRule.ruleType,
         isPublic: cursorRule.isPublic,
         views: cursorRule.views,

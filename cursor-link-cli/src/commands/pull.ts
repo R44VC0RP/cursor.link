@@ -75,7 +75,7 @@ export async function pullCommand(options: PullOptions) {
     
     for (const rule of selectedRules) {
       const filename = generateFilename(rule.title);
-      const exists = fileManager.ruleFileExists(filename);
+      const exists = fileManager.ruleFileExists(filename, rule.type as 'rule' | 'command');
       conflicts.push({ rule, exists });
     }
 
@@ -85,7 +85,8 @@ export async function pullCommand(options: PullOptions) {
       console.log(chalk.yellow(`\n⚠️  ${existingFiles.length} file(s) already exist locally:`));
       existingFiles.forEach(({ rule }) => {
         const filename = generateFilename(rule.title);
-        console.log(chalk.gray(`   • ${filename}.mdc`));
+        const extension = rule.type === 'command' ? '.md' : '.mdc';
+        console.log(chalk.gray(`   • ${filename}${extension}`));
       });
       
       const { overwrite } = await inquirer.prompt([
@@ -134,10 +135,12 @@ export async function pullCommand(options: PullOptions) {
           filename,
           title: rule.title,
           content: rule.content,
+          type: rule.type as 'rule' | 'command',
           alwaysApply,
         });
         
-        pullSpinner.succeed(chalk.green(`Saved "${rule.title}" → ${filename}.mdc`));
+        const extension = rule.type === 'command' ? '.md' : '.mdc';
+        pullSpinner.succeed(chalk.green(`Saved "${rule.title}" → ${filename}${extension}`));
         results.success++;
       } catch (error: any) {
         pullSpinner.fail(chalk.red(`Failed to save "${rule.title}"`));
@@ -177,13 +180,14 @@ function displayRulesList(rules: RemoteRule[]) {
   rules.forEach((rule, index) => {
     const number = String(index + 1).padStart(2, ' ');
     const title = rule.title;
-    const type = rule.ruleType;
+    const itemType = rule.type === 'command' ? 'Command' : 'Rule';
+    const ruleType = rule.ruleType;
     const visibility = rule.isPublic ? 'public' : 'private';
     const views = rule.views;
     const date = new Date(rule.updatedAt).toLocaleDateString();
     
-    console.log(chalk.white(`${number}. ${chalk.bold(title)}`));
-    console.log(chalk.gray(`    Type: ${type} | Visibility: ${visibility} | Views: ${views} | Updated: ${date}`));
+    console.log(chalk.white(`${number}. ${chalk.bold(title)} ${chalk.cyan(`[${itemType}]`)}`));
+    console.log(chalk.gray(`    Rule Type: ${ruleType} | Visibility: ${visibility} | Views: ${views} | Updated: ${date}`));
     
     // Show content preview (first line)
     const firstLine = rule.content.split('\n')[0]?.trim();

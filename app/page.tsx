@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { track } from "@vercel/analytics"
+import { generateRandomSlug } from "@/lib/utils"
 
 function HomePage() {
   const { data: session, isPending } = useSession()
@@ -36,13 +37,17 @@ function HomePage() {
     defaultValue: "false",
     shallow: true
   })
+  const [urlType, setUrlType] = useQueryState("type", {
+    defaultValue: "rule",
+    shallow: true
+  })
   const [urlEditId, setUrlEditId] = useQueryState("editId", {
     defaultValue: "",
     shallow: true
   })
 
   // Local state for immediate updates
-  const [localTitle, setLocalTitle] = useState(urlTitle)
+  const [localTitle, setLocalTitle] = useState(urlTitle || generateRandomSlug())
   const [localContent, setLocalContent] = useState(urlContent)
 
   const [isShared, setIsShared] = useState(false)
@@ -52,6 +57,7 @@ function HomePage() {
   const [tokenCount, setTokenCount] = useState(0)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedRule, setSelectedRule] = useState(urlRuleType || "always")
+  const [selectedType, setSelectedType] = useState(urlType || "rule")
   const [isSignInDialogOpen, setIsSignInDialogOpen] = useState(false)
   const [signInSuccess, setSignInSuccess] = useState(false)
   const [sentEmail, setSentEmail] = useState("")
@@ -93,7 +99,7 @@ function HomePage() {
 
   // Sync URL state to local state on initial load or URL change
   useEffect(() => {
-    setLocalTitle(urlTitle)
+    setLocalTitle(urlTitle || generateRandomSlug())
   }, [urlTitle])
 
   useEffect(() => {
@@ -105,6 +111,10 @@ function HomePage() {
   useEffect(() => {
     setSelectedRule(urlRuleType || "always")
   }, [urlRuleType])
+
+  useEffect(() => {
+    setSelectedType(urlType || "rule")
+  }, [urlType])
 
   useEffect(() => {
     setSavedRuleId(urlEditId || null)
@@ -262,6 +272,7 @@ function HomePage() {
         ...(savedRuleId && { id: savedRuleId }),
         title: localTitle,
         content: localContent,
+        type: selectedType,
         ruleType: selectedRule,
         isPublic: false
       }
@@ -278,6 +289,7 @@ function HomePage() {
       setSavedRuleId(rule.id)
       track("Rule Saved", {
         isUpdate: Boolean(savedRuleId),
+        type: selectedType,
         ruleType: selectedRule,
         titleLength: localTitle.length,
         contentLength: localContent.length,
@@ -325,6 +337,7 @@ function HomePage() {
           id: savedRuleId,
           title: localTitle,
           content: localContent,
+          type: selectedType,
           ruleType: selectedRule,
           isPublic: true
         })
@@ -336,6 +349,7 @@ function HomePage() {
       await navigator.clipboard.writeText(publicUrl)
       track("Rule Shared", {
         ruleId: savedRuleId,
+        type: selectedType,
         ruleType: selectedRule,
         contentLength: localContent.length,
       })
@@ -498,16 +512,40 @@ function HomePage() {
         <main className="mx-auto max-w-4xl p-4 sm:p-6">
           <Header />
           <div className="space-y-4">
-            {/* Title Input with Dropdown */}
+            {/* Title Input with Dropdowns */}
             <div className="space-y-3">
               <div className="flex items-end gap-3">
                 <Input
                   id="title"
-                  placeholder="index.mdc"
+                  placeholder={selectedType === "command" ? "my-command.md" : "index.mdc"}
                   value={localTitle}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   className="h-auto py-0 bg-transparent border-0 border-b border-white/10 text-white placeholder:text-gray-500 focus:border-white/20 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg font-medium rounded-none px-0 flex-1"
                 />
+
+                {/* Type Selector */}
+                <div className="relative">
+                  <select
+                    value={selectedType}
+                    onChange={(e) => {
+                      setSelectedType(e.target.value)
+                      setUrlType(e.target.value)
+                      
+                      // Generate new random slug when switching types if no custom title
+                      if (!localTitle || localTitle === "index.mdc" || localTitle === "my-command.md") {
+                        const newSlug = generateRandomSlug()
+                        setLocalTitle(newSlug)
+                        setUrlTitle(newSlug)
+                      }
+                      
+                      track("Type Changed", { type: e.target.value })
+                    }}
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-[#2A2D32] border border-white/10 rounded-md hover:bg-[#34373C] transition-colors focus:outline-none focus:ring-2 focus:ring-white/20"
+                  >
+                    <option value="rule">Rule</option>
+                    <option value="command">Command</option>
+                  </select>
+                </div>
 
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -549,7 +587,18 @@ function HomePage() {
                 <Textarea
                   ref={textareaRef}
                   id="content"
-                  placeholder={`# Cursor Rules
+                  placeholder={selectedType === "command" ? `# Custom Command
+
+This command helps with specific development tasks.
+
+## Usage
+Use this command by typing /${localTitle || 'my-command'} in Cursor.
+
+## Description
+Describe what this command does and when to use it.
+
+## Examples
+Provide examples of how this command should be used.` : `# Cursor Rules
 
 You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
 

@@ -51,6 +51,7 @@ export const cursorRule = pgTable("cursor_rule", {
   userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  type: text("type").notNull().default("rule"), // rule, command
   ruleType: text("ruleType").notNull().default("always"), // always, intelligent, specific, manual
   isPublic: boolean("isPublic").notNull().default(false),
   views: integer("views").notNull().default(0),

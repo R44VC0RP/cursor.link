@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
         id: cursorRule.id,
         title: cursorRule.title,
         content: cursorRule.content,
+        type: cursorRule.type,
         ruleType: cursorRule.ruleType,
         isPublic: cursorRule.isPublic,
         views: cursorRule.views,
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, content, ruleType = "always", isPublic = false } = body
+    const { title, content, type = "rule", ruleType = "always", isPublic = false } = body
 
     if (!title || !content) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 })
@@ -135,6 +136,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       title,
       content,
+      type,
       ruleType,
       isPublic,
       views: 0,
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     }).returning()
 
-    await track('Rule Created', { ruleId: id, isPublic, ruleType })
+    await track('Rule Created', { ruleId: id, isPublic, type, ruleType }, { request })
     return NextResponse.json(newRule)
   } catch (error) {
     console.error("Error creating cursor rule:", error)
@@ -182,7 +184,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, title, content, ruleType, isPublic } = body
+    const { id, title, content, type, ruleType, isPublic } = body
 
     if (!id || !title || !content) {
       return NextResponse.json({ error: "ID, title and content are required" }, { status: 400 })
@@ -193,6 +195,7 @@ export async function PUT(request: NextRequest) {
       .set({
         title,
         content,
+        type,
         ruleType,
         isPublic,
         updatedAt: new Date(),
@@ -207,7 +210,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Rule not found or unauthorized" }, { status: 404 })
     }
 
-    await track('Rule Updated', { ruleId: id, isPublic: Boolean(isPublic), ruleType })
+    await track('Rule Updated', { ruleId: id, isPublic: Boolean(isPublic), type, ruleType }, { request })
     return NextResponse.json(updatedRule)
   } catch (error) {
     console.error("Error updating cursor rule:", error)
@@ -262,7 +265,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Rule not found or unauthorized" }, { status: 404 })
     }
 
-    await track('Rule Deleted', { ruleId: id })
+    await track('Rule Deleted', { ruleId: id }, { request })
     return NextResponse.json({ message: "Rule deleted successfully" })
   } catch (error) {
     console.error("Error deleting cursor rule:", error)
