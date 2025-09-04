@@ -16,6 +16,7 @@ export async function GET(
         id: cursorRule.id,
         title: cursorRule.title,
         content: cursorRule.content,
+        type: cursorRule.type,
         ruleType: cursorRule.ruleType,
         userId: cursorRule.userId,
         user: {
@@ -36,15 +37,19 @@ export async function GET(
     }
 
     // Generate universal registry item with content
+    const isCommand = rule.type === 'command';
+    const directory = isCommand ? 'commands' : 'rules';
+    const extension = isCommand ? 'md' : 'mdc';
+    
     const registryItem = {
       "$schema": "https://ui.shadcn.com/schema/registry-item.json",
       "name": rule.title,
       "type": "registry:item", // Changed to registry:item for universal items
       "files": [
         {
-          "path": `cursor.link/rules/${rule.title}.mdc`, // Source path (not used but required)
+          "path": `cursor.link/${directory}/${rule.title}.${extension}`, // Source path (not used but required)
           "type": "registry:file",
-          "target": `~/.cursor/rules/${rule.title}.mdc`, // Explicit target makes it universal
+          "target": `~/.cursor/${directory}/${rule.title}.${extension}`, // Explicit target makes it universal
           "content": rule.content // Include the actual content
         }
       ]

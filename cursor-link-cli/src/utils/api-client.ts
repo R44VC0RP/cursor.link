@@ -4,6 +4,7 @@ export interface RemoteRule {
   id: string;
   title: string;
   content: string;
+  type: string;
   ruleType: string;
   isPublic: boolean;
   views: number;
@@ -14,6 +15,7 @@ export interface RemoteRule {
 export interface CreateRuleRequest {
   title: string;
   content: string;
+  type: string;
   ruleType: string;
   isPublic: boolean;
 }
