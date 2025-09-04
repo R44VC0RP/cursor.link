@@ -7,14 +7,23 @@ export interface CursorRule {
   filename: string;
   title: string;
   content: string;
+  type: 'rule' | 'command';
   ruleType: 'always' | 'intelligent' | 'specific' | 'manual';
   alwaysApply?: boolean;
 }
 
 export class FileManager {
-  private getCursorRulesDir(): string {
+  private getCursorDirs(): { rulesDir: string; commandsDir: string } {
     const cwd = process.cwd();
-    const rulesDir = path.join(cwd, '.cursor', 'rules');
+    const cursorDir = path.join(cwd, '.cursor');
+    const rulesDir = path.join(cursorDir, 'rules');
+    const commandsDir = path.join(cursorDir, 'commands');
+    
+    return { rulesDir, commandsDir };
+  }
+
+  private getCursorRulesDir(): string {
+    const { rulesDir } = this.getCursorDirs();
     
     if (!fs.existsSync(rulesDir)) {
       throw new Error(`Cursor rules directory not found: ${rulesDir}\nMake sure you're in a project with .cursor/rules/ directory.`);
@@ -24,11 +33,24 @@ export class FileManager {
   }
 
   async findRuleFiles(): Promise<string[]> {
-    const rulesDir = this.getCursorRulesDir();
-    const pattern = path.join(rulesDir, '*.mdc').replace(/\\/g, '/');
+    const { rulesDir, commandsDir } = this.getCursorDirs();
+    const files: string[] = [];
     
     try {
-      const files = await glob(pattern);
+      // Find rules files
+      if (fs.existsSync(rulesDir)) {
+        const rulesPattern = path.join(rulesDir, '*.mdc').replace(/\\/g, '/');
+        const ruleFiles = await glob(rulesPattern);
+        files.push(...ruleFiles);
+      }
+      
+      // Find command files
+      if (fs.existsSync(commandsDir)) {
+        const commandsPattern = path.join(commandsDir, '*.md').replace(/\\/g, '/');
+        const commandFiles = await glob(commandsPattern);
+        files.push(...commandFiles);
+      }
+      
       return files.sort();
     } catch (error) {
       throw new Error(`Error finding rule files: ${error}`);
@@ -38,7 +60,15 @@ export class FileManager {
   parseRuleFile(filePath: string): CursorRule {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
-      const filename = path.basename(filePath, '.mdc');
+      const { rulesDir, commandsDir } = this.getCursorDirs();
+      
+      // Determine type based on file location
+      const isCommand = filePath.includes(commandsDir) || filePath.endsWith('.md');
+      const type: 'rule' | 'command' = isCommand ? 'command' : 'rule';
+      
+      // Get filename without extension
+      const extension = isCommand ? '.md' : '.mdc';
+      const filename = path.basename(filePath, extension);
       
       // Parse frontmatter and content
       const lines = content.split('\n');
@@ -80,6 +110,7 @@ export class FileManager {
         filename,
         title,
         content: actualContent,
+        type,
         ruleType,
         alwaysApply,
       };
@@ -104,9 +135,17 @@ export class FileManager {
     return rules;
   }
 
-  async writeRuleFile(rule: { filename: string; title: string; content: string; alwaysApply?: boolean }): Promise<void> {
-    const rulesDir = this.getCursorRulesDir();
-    const filePath = path.join(rulesDir, `${rule.filename}.mdc`);
+  async writeRuleFile(rule: { filename: string; title: string; content: string; type?: 'rule' | 'command'; alwaysApply?: boolean }): Promise<void> {
+    const { rulesDir, commandsDir } = this.getCursorDirs();
+    const isCommand = rule.type === 'command';
+    const targetDir = isCommand ? commandsDir : rulesDir;
+    const extension = isCommand ? '.md' : '.mdc';
+    const filePath = path.join(targetDir, `${rule.filename}${extension}`);
+    
+    // Ensure target directory exists
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
     
     // Create frontmatter
     const frontmatter = [
@@ -135,6 +174,7 @@ export class FileManager {
     const cwd = process.cwd();
     const cursorDir = path.join(cwd, '.cursor');
     const rulesDir = path.join(cursorDir, 'rules');
+    const commandsDir = path.join(cursorDir, 'commands');
     
     if (!fs.existsSync(cursorDir)) {
       fs.mkdirSync(cursorDir, { recursive: true });
@@ -143,11 +183,18 @@ export class FileManager {
     if (!fs.existsSync(rulesDir)) {
       fs.mkdirSync(rulesDir, { recursive: true });
     }
+    
+    if (!fs.existsSync(commandsDir)) {
+      fs.mkdirSync(commandsDir, { recursive: true });
+    }
   }
 
-  ruleFileExists(filename: string): boolean {
-    const rulesDir = this.getCursorRulesDir();
-    const filePath = path.join(rulesDir, `${filename}.mdc`);
+  ruleFileExists(filename: string, type: 'rule' | 'command' = 'rule'): boolean {
+    const { rulesDir, commandsDir } = this.getCursorDirs();
+    const isCommand = type === 'command';
+    const targetDir = isCommand ? commandsDir : rulesDir;
+    const extension = isCommand ? '.md' : '.mdc';
+    const filePath = path.join(targetDir, `${filename}${extension}`);
     return fs.existsSync(filePath);
   }
 }

@@ -16,6 +16,7 @@ export async function GET(
         id: cursorRule.id,
         title: cursorRule.title,
         content: cursorRule.content,
+        type: cursorRule.type,
         ruleType: cursorRule.ruleType,
       })
       .from(cursorRule)
@@ -30,8 +31,8 @@ export async function GET(
       return NextResponse.json({ error: "Rule file not found" }, { status: 404 })
     }
 
-    // Generate .mdc file content dynamically
-    const mdcContent = `---
+    // Generate file content dynamically based on type
+    const fileContent = `---
 description: ${rule.title}
 globs:
 alwaysApply: ${rule.ruleType === 'always' ? 'true' : 'false'}
@@ -39,11 +40,12 @@ alwaysApply: ${rule.ruleType === 'always' ? 'true' : 'false'}
 
 ${rule.content}`
     
-    return new NextResponse(mdcContent, {
+    return new NextResponse(fileContent, {
       status: 200,
       headers: {
         "Content-Type": "text/markdown",
         "Cache-Control": "public, max-age=300, s-maxage=300", // 5 minute cache
+        "Content-Disposition": `attachment; filename="${rule.title}.${rule.type === 'command' ? 'md' : 'mdc'}"`,
       },
     })
   } catch (error) {

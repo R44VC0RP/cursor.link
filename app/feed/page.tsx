@@ -19,6 +19,7 @@ interface CursorRule {
   id: string
   title: string
   content: string
+  type: string
   ruleType: string
   views: number
   createdAt: string
@@ -284,6 +285,13 @@ export default function FeedPage() {
                               <h3 className="font-medium text-white text-sm group-hover:text-[#70A7D7] transition-colors line-clamp-2">
                                 {rule.title}
                               </h3>
+                              <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${
+                                rule.type === 'command' 
+                                  ? 'bg-purple-500/10 text-purple-400' 
+                                  : 'bg-blue-500/10 text-blue-400'
+                              }`}>
+                                {rule.type === 'command' ? 'Command' : 'Rule'}
+                              </span>
                             </div>
                             <p className="text-xs text-gray-400 mb-1 line-clamp-2 group-hover:text-gray-300 transition-colors">
                               {firstLine(rule.content)}

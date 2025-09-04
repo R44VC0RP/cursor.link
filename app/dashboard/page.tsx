@@ -23,6 +23,7 @@ interface CursorRule {
   id: string
   title: string
   content: string
+  type: string
   ruleType: string
   isPublic: boolean
   views: number
@@ -442,6 +443,13 @@ export default function DashboardPage() {
                             <h3 className="font-medium text-white text-sm truncate">
                               {rule.title}
                             </h3>
+                            <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${
+                              rule.type === 'command' 
+                                ? 'bg-purple-500/10 text-purple-400' 
+                                : 'bg-blue-500/10 text-blue-400'
+                            }`}>
+                              {rule.type === 'command' ? 'Command' : 'Rule'}
+                            </span>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()

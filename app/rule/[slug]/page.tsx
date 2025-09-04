@@ -18,6 +18,7 @@ interface CursorRule {
   id: string
   title: string
   content: string
+  type: string
   ruleType: string
   isPublic: boolean
   views: number
