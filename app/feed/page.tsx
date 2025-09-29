@@ -7,6 +7,7 @@ import { Eye, Clock } from "lucide-react"
 import { toast } from "sonner"
 import { track } from "@vercel/analytics"
 import { AddToListButton } from "@/components/lists/add-to-list-button"
+import { TryInCursorButton } from "@/components/ui/try-in-cursor-button"
 import { useSession } from "@/lib/auth-client"
 import Link from "next/link"
 import {
@@ -378,8 +379,22 @@ export default function FeedPage() {
                           </Popover>
                         </div>
 
-                        {/* Second row - Download and Add to List */}
+                        {/* Second row - Try in Cursor, Download and Add to List */}
                         <div className="flex items-center gap-2 justify-start sm:justify-end w-full sm:w-auto">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <TryInCursorButton
+                              title={rule.title}
+                              content={rule.content}
+                              ruleId={rule.id}
+                              variant="ghost"
+                              size="sm"
+                              analyticsContext="feed"
+                              className="h-auto p-1 hover:bg-white/10 text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+                            >
+                              Try in Cursor
+                            </TryInCursorButton>
+                          </div>
+                          
                           <button
                             onClick={(e) => {
                               e.stopPropagation()

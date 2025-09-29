@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { track } from "@vercel/analytics"
 import { AddToListButton } from "@/components/lists/add-to-list-button"
+import { TryInCursorButton } from "@/components/ui/try-in-cursor-button"
 import { useSession } from "@/lib/auth-client"
 
 interface CursorRule {
@@ -308,6 +309,16 @@ export default function PublicRulePage() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 pt-[0]">
             <div className="flex items-center gap-3 flex-wrap">
+              <TryInCursorButton
+                title={rule.title}
+                content={rule.content}
+                ruleId={rule.id}
+                variant="default"
+                size="sm"
+                analyticsContext="rule-page"
+                className="bg-[#70A7D7] hover:bg-[#8BB8E8] text-white"
+              />
+              
               <Button
                 onClick={handleDownload}
                 variant="secondary"
