@@ -7,12 +7,20 @@ import chalk from 'chalk';
 import open from 'open';
 import ora from 'ora';
 import { DeviceAuthClient } from './types.js';
+import { SecurityManager } from './security.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.cursor-link');
 const TOKEN_FILE = path.join(CONFIG_DIR, 'token.json');
 
 // Default to production URL, but can be overridden via env var
 const BASE_URL = process.env.CURSOR_LINK_URL || 'https://cursor.link';
+
+// Validate base URL for security
+if (!SecurityManager.validateBaseUrl(BASE_URL)) {
+  console.error(chalk.red(`❌ Invalid or insecure base URL: ${BASE_URL}`));
+  console.error(chalk.gray('Use HTTPS URLs in production, or localhost for development'));
+  process.exit(1);
+}
 
 export const authClient = createAuthClient({
   baseURL: BASE_URL,
@@ -60,15 +68,23 @@ export class AuthManager {
       }
       const tokenData = JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8'));
       
+      // Validate token structure
+      if (!SecurityManager.validateToken(tokenData)) {
+        console.warn(chalk.yellow('⚠️  Invalid token format, clearing...'));
+        this.clearToken();
+        return null;
+      }
+      
       // Check if token is expired
-      if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
+      if (SecurityManager.isTokenExpired(tokenData)) {
         this.clearToken();
         return null;
       }
       
       return tokenData;
     } catch (error) {
-      console.error('Error reading stored token:', error);
+      const sanitizedError = SecurityManager.sanitizeError(error);
+      console.error(`Error reading stored token: ${sanitizedError}`);
       return null;
     }
   }
@@ -86,9 +102,7 @@ export class AuthManager {
   }
 
   clearToken() {
-    if (fs.existsSync(TOKEN_FILE)) {
-      fs.unlinkSync(TOKEN_FILE);
-    }
+    SecurityManager.clearTokenFile();
   }
 
   async isAuthenticated(): Promise<boolean> {
@@ -159,9 +173,17 @@ export class AuthManager {
     const spinner = ora('Requesting device authorization...').start();
     
     try {
-      // Request device code
+      const clientId = "cursor-link-cli";
+      
+      // Validate client_id for security
+      if (!SecurityManager.validateClientId(clientId)) {
+        spinner.fail('Invalid client ID format');
+        return false;
+      }
+      
+      // Request device code (following Better Auth example pattern exactly)
       const { data, error } = await authClient.device.code({
-        client_id: "cursor-link-cli",
+        client_id: clientId,
         scope: "openid profile email",
       });
 
@@ -182,12 +204,12 @@ export class AuthManager {
 
       spinner.succeed('Device authorization requested');
       
-      console.log(chalk.cyan('\n📱 Device Authorization Required'));
-      console.log(chalk.white(`Please visit: ${chalk.underline(verification_uri)}`));
+      console.log(chalk.cyan('\n📱 Device Authorization in Progress'));
+      console.log(chalk.white(`Please visit: ${verification_uri}`));
       console.log(chalk.white(`Enter code: ${chalk.bold.yellow(user_code)}\n`));
       
       // Open browser with the complete URL
-      const urlToOpen = verification_uri_complete || `${verification_uri}?user_code=${user_code}`;
+      const urlToOpen = verification_uri_complete || verification_uri;
       if (urlToOpen) {
         console.log(chalk.gray('🌐 Opening browser...'));
         try {
@@ -200,7 +222,7 @@ export class AuthManager {
       console.log(chalk.gray(`⏳ Waiting for authorization... (polling every ${interval}s)\n`));
 
       // Poll for token
-      const success = await this.pollForToken(device_code, interval);
+      const success = await this.pollForToken(device_code, interval, clientId);
       return success;
     } catch (err: any) {
       spinner.fail(`Error: ${err.message}`);
@@ -208,7 +230,7 @@ export class AuthManager {
     }
   }
 
-  private async pollForToken(deviceCode: string, interval: number): Promise<boolean> {
+  private async pollForToken(deviceCode: string, interval: number, clientId: string): Promise<boolean> {
     let pollingInterval = interval;
     const spinner = ora('Waiting for authorization...').start();
     
@@ -218,12 +240,7 @@ export class AuthManager {
           const { data, error } = await authClient.device.token({
             grant_type: "urn:ietf:params:oauth:grant-type:device_code",
             device_code: deviceCode,
-            client_id: "cursor-link-cli",
-            fetchOptions: {
-              headers: {
-                "user-agent": "cursor-link-cli/1.0.0",
-              },
-            },
+            client_id: clientId,
           });
 
           if (data?.access_token) {
