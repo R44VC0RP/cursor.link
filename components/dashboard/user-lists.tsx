@@ -94,6 +94,7 @@ export function UserLists({ onListsChange }: UserListsProps) {
   const [newListTitle, setNewListTitle] = useState("")
   const [isCreating, setIsCreating] = useState(false)
   const [actionStates, setActionStates] = useState<{[key: string]: boolean}>({})
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   // Helper function to show checkmark feedback
   const showActionFeedback = (actionKey: string) => {
@@ -161,6 +162,7 @@ export function UserLists({ onListsChange }: UserListsProps) {
       const newList = await response.json()
       setLists(prev => [newList, ...prev])
       setNewListTitle("")
+      setIsCreateDialogOpen(false) // Close the dialog after successful creation
       toast.success(`Created list "${newListTitle}"!`)
       track("List Created", { listId: newList.id })
       onListsChange?.()
@@ -293,7 +295,7 @@ export function UserLists({ onListsChange }: UserListsProps) {
           <div className="text-sm text-gray-400">
             {loading ? "Loading..." : `${lists.length} list${lists.length !== 1 ? 's' : ''}`}
           </div>
-          <Dialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="secondary" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
@@ -529,7 +531,7 @@ export function UserLists({ onListsChange }: UserListsProps) {
               <List className="h-12 w-12 mx-auto mb-4 text-gray-400 opacity-30" />
               <h3 className="text-lg font-medium text-white mb-2">No lists yet</h3>
               <p className="text-gray-400 text-sm mb-4">Create your first list to organize your cursor rules.</p>
-              <Dialog>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="primary" size="sm">
                     <Plus className="h-4 w-4 mr-2" />

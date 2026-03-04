@@ -225,13 +225,7 @@ export function UserAvatar() {
               </button>
             </div>
           </div>
-          <div className="p-4 border-b border-white/10">
-            <div className="space-y-3 ">
-              <Link href="/dashboard" className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Dashboard</span>
-              </Link>
-            </div>
-          </div>
+
           <div className="p-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
