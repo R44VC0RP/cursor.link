@@ -40,6 +40,14 @@ export function Header() {
             </span>
           </Link>
         </Button>
+        <Button asChild variant="ghost" size="sm" className="h-[35px] min-h-0 py-0 px-2 sm:px-3">
+          <Link href="/dashboard">
+            <span className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><title>dashboard</title><g fill="#70A7D7"><path d="M2.75 2.75C2.75 2.336 3.086 2 3.5 2H6.5C6.914 2 7.25 2.336 7.25 2.75V6.5C7.25 6.914 6.914 7.25 6.5 7.25H3.5C3.086 7.25 2.75 6.914 2.75 6.5V2.75Z" fill-opacity="0.4"></path> <path d="M10.75 2.75C10.75 2.336 11.086 2 11.5 2H14.5C14.914 2 15.25 2.336 15.25 2.75V6.5C15.25 6.914 14.914 7.25 14.5 7.25H11.5C11.086 7.25 10.75 6.914 10.75 6.5V2.75Z" fill-opacity="0.4"></path> <path d="M2.75 10.75C2.75 10.336 3.086 10 3.5 10H6.5C6.914 10 7.25 10.336 7.25 10.75V14.5C7.25 14.914 6.914 15.25 6.5 15.25H3.5C3.086 15.25 2.75 14.914 2.75 14.5V10.75Z" fill-opacity="0.4"></path> <path d="M10.75 10.75C10.75 10.336 11.086 10 11.5 10H14.5C14.914 10 15.25 10.336 15.25 10.75V14.5C15.25 14.914 14.914 15.25 14.5 15.25H11.5C11.086 15.25 10.75 14.914 10.75 14.5V10.75Z" fill-opacity="0.4"></path></g></svg>
+              <span className="hidden sm:inline">Dashboard</span>
+            </span>
+          </Link>
+        </Button>
 
         <UserAvatar />
       </div>

@@ -13,28 +13,33 @@ cursor.link is a platform for creating, sharing, and discovering Cursor IDE rule
 - **🔗 Easy Sharing** - Share rules with unique URLs and public/private visibility
 - **📦 CLI Integration** - Install rules directly via `npx shadcn add` command
 - **👤 User Dashboard** - Manage all your rules in one place
-- **🔍 Public Discovery** - Browse and discover community-shared rules
+- **🔍 Public Discovery** - Browse and discover community-shared rules in Hot/New feeds
+- **📱 CLI Tool** - Full-featured CLI for syncing rules between local and cloud
+- **📋 Lists & Collections** - Organize rules into custom lists
 - **🎨 Modern UI** - Beautiful dark theme with Tailwind CSS and Radix components
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Next.js 15** - App Router with React 19
-- **TypeScript** - Full type safety
-- **Tailwind CSS v4** - Modern styling system
+- **Next.js 15.2.4** - App Router with React 19
+- **TypeScript 5** - Full type safety
+- **Tailwind CSS 4.1.9** - Modern styling system
 - **Radix UI** - Accessible component primitives
 - **React Hook Form + Zod** - Form handling and validation
+- **Geist Font** - Modern typography
 
 ### Backend
 - **PostgreSQL** - Primary database (via Neon.tech)
-- **Drizzle ORM** - Type-safe database queries
-- **Better Auth** - Modern authentication with magic links
-- **Inbound Email** - Transactional email service
+- **Drizzle ORM 0.44.5** - Type-safe database queries
+- **Better Auth 1.3.8-beta.9** - Modern authentication with magic links
+- **Inbound Email 4.0.0** - Transactional email service
 
 ### Tools & Services
 - **Vercel** - Deployment and hosting
-- **React Scan** - Performance monitoring
-- **Sonner** - Toast notifications
+- **React Scan 0.4.3** - Performance monitoring
+- **Sonner 2.0.7** - Toast notifications
+- **Vercel Analytics** - Usage analytics
+- **GPT Tokenizer** - Token counting for rules
 
 ## 🚀 Getting Started
 
@@ -70,21 +75,25 @@ BETTER_AUTH_URL="http://localhost:3000"
 
 2. **Install dependencies**
    ```bash
+   # Using bun (recommended)
+   bun install
+   
+   # Or using npm
    npm install
    ```
 
 3. **Set up the database**
    ```bash
    # Generate migrations
-   npm run db:generate
+   bun run db:generate
    
    # Apply migrations
-   npm run db:migrate
+   bun run db:migrate
    ```
 
 4. **Start the development server**
    ```bash
-   npm run dev
+   bun run dev
    ```
 
 5. **Open your browser**
@@ -99,16 +108,26 @@ cursor.link/
 │   ├── api/                     # API routes
 │   │   ├── auth/               # Authentication endpoints
 │   │   ├── cursor-rules/       # CRUD operations for rules
+│   │   ├── feed/               # Hot/New feed endpoints
+│   │   ├── lists/              # Lists management
 │   │   ├── my-rules/           # User's personal rules
 │   │   ├── public-rule/        # Public rule access
 │   │   └── registry/           # shadcn-style CLI registry
 │   ├── dashboard/              # User dashboard
+│   ├── feed/                   # Public feed/discovery page
 │   ├── login/                  # Authentication pages
 │   └── page.tsx               # Homepage/editor
 ├── components/                  # Reusable UI components
 │   ├── auth/                   # Authentication components
+│   ├── dashboard/              # Dashboard components
+│   ├── lists/                  # Lists management components
 │   ├── ui/                     # Base UI components
 │   └── header.tsx             # Site header
+├── cursor-link-cli/            # CLI tool package
+│   ├── src/                    # CLI source code
+│   │   ├── commands/           # CLI commands (auth, push, pull, get)
+│   │   └── utils/              # CLI utilities
+│   └── package.json           # CLI package configuration
 ├── lib/                        # Shared utilities
 │   ├── auth.ts               # Authentication configuration
 │   ├── db.ts                 # Database connection
@@ -182,14 +201,71 @@ GET /api/my-rules
 ```
 Get all rules belonging to the authenticated user.
 
+### Feed & Discovery
+
+#### Hot Feed
+```http
+GET /api/feed/hot
+GET /api/feed/hot?q=search_query
+```
+Get popular rules sorted by views and engagement.
+
+#### New Feed
+```http
+GET /api/feed/new
+GET /api/feed/new?q=search_query
+```
+Get recently created rules.
+
+### Lists Management
+
+#### Get Lists
+```http
+GET /api/lists
+```
+Get all lists for the authenticated user.
+
+#### Create List
+```http
+POST /api/lists
+Content-Type: application/json
+
+{
+  "title": "My List Name"
+}
+```
+
+#### Add Rules to List
+```http
+POST /api/lists/[listId]/rules
+Content-Type: application/json
+
+{
+  "ruleIds": ["rule-id-1", "rule-id-2"]
+}
+```
+
 ## 🎯 Usage
 
 ### Creating Rules
 
 1. **Visit the homepage** - Start creating immediately without login
 2. **Choose rule type** - Select from Always Apply, Intelligent, File-specific, or Manual
-3. **Write your rule** - Use the built-in editor with syntax highlighting
+3. **Write your rule** - Use the built-in editor with syntax highlighting and token counting
 4. **Save and share** - Login to save privately or share publicly
+
+### Discovering Rules
+
+1. **Visit the Feed** - Browse popular and new rules from the community
+2. **Search rules** - Use the search bar to find rules by title, content, or author
+3. **View details** - Click on any rule to see full content and metadata
+4. **Copy or download** - Use the action buttons to copy content or download as `.mdc` file
+
+### Organizing Rules
+
+1. **Create lists** - Organize your rules into custom collections
+2. **Add to lists** - Select multiple rules and add them to lists
+3. **Manage collections** - Edit, delete, and organize your lists from the dashboard
 
 ### Rule Types
 
@@ -207,6 +283,82 @@ npx shadcn add https://cursor.link/api/registry/your-rule-id
 ```
 
 This installs the rule to `~/.cursor/rules/` automatically.
+
+## 📱 CLI Tool
+
+cursor.link includes a powerful CLI tool for syncing rules between your local development environment and the cloud platform.
+
+### Installation
+
+Install the CLI globally:
+
+```bash
+npm install -g cursor-link
+# or
+pnpm add -g cursor-link
+# or run directly with npx
+npx cursor-link --help
+```
+
+### Quick Start
+
+1. **Authenticate with cursor.link:**
+   ```bash
+   cursor-link auth login
+   ```
+   This opens your browser for device authorization.
+
+2. **Push your local cursor rules:**
+   ```bash
+   cursor-link push
+   ```
+
+3. **Pull rules from cursor.link:**
+   ```bash
+   cursor-link pull
+   ```
+
+### Commands
+
+#### Authentication
+- `cursor-link auth login` - Sign in using device authorization
+- `cursor-link auth logout` - Sign out
+- `cursor-link auth status` - Check authentication status
+
+#### Rule Management
+- `cursor-link push [options]` - Push local cursor rules to cursor.link
+  - `--public` - Make rules public (default: private)
+  - `--force` - Overwrite existing rules without confirmation
+- `cursor-link pull [options]` - Pull cursor rules from cursor.link
+  - `--list` - List available rules without downloading
+  - `--all` - Include public rules from other users (default: only your rules)
+- `cursor-link get <identifier>` - Get a specific rule by slug or ID
+
+### How it Works
+
+#### Push Process
+1. Scans your `.cursor/rules/` directory for `.mdc` files
+2. Parses each file to extract title, content, and settings
+3. Uploads rules to your cursor.link account
+4. Handles conflicts by asking for your preference
+
+#### Pull Process
+1. Fetches available rules from cursor.link
+2. Shows an interactive selection interface
+3. Downloads selected rules to `.cursor/rules/`
+4. Preserves frontmatter settings like `alwaysApply`
+
+#### File Format
+The CLI works with cursor rule files in the `.cursor/rules/` directory. Each file should be a `.mdc` file with this format:
+
+```markdown
+---
+alwaysApply: true
+---
+# My Rule Title
+
+Your rule content here...
+```
 
 ## 🤝 Contributing
 
